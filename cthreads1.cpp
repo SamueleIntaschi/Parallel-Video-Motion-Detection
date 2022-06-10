@@ -123,12 +123,11 @@ int main(int argc, char * argv[]) {
     string filename = argv[1];
     int k = atoi(argv[2]); // k for accuracy then
     int nw = atoi(argv[3]); // number of workers
-    //int gw = (nw - uw)/3;
-    int cw = nw/3;
-    int sw = nw - cw;
-    if (cw == 0) cw = 1;
-    if (sw == 0) sw = 1;
-    cout << "Thread use: " << cw << " for conversion to greyscale and comparing, " << sw << " for smoothing" << endl;
+    int uw = 2;
+    int gw = (nw - uw)/3;
+    int cw = (nw - uw)/3;
+    int sw = nw - gw - cw - uw;
+    cout << "Thread use: " << gw << " for conversion to greyscale, " << sw << " for smoothing and " << cw << " for comparing " << endl;
     // Start time measurement
     auto complessive_time_start = std::chrono::high_resolution_clock::now();
     float threshold = (float) k / 100;
@@ -155,12 +154,15 @@ int main(int argc, char * argv[]) {
     mutex lg;
     mutex ls;
     mutex lc;
+    mutex lr;
     deque<function<Mat()>> greyscale_tasks;
     deque<function<Mat()>> smoothing_tasks;
-    deque<function<float()>> comparing_tasks;
+    deque<function<int()>> comparing_tasks;
+    deque<float> results;
     condition_variable cond_greyscale;
     condition_variable cond_smoothing;
     condition_variable cond_comparing;
+    condition_variable cond_results;
     bool stop = false;
 
     auto submit_greyscale = [&] (function<Mat()> f) {
@@ -180,12 +182,20 @@ int main(int argc, char * argv[]) {
         cond_smoothing.notify_one();
     };
 
-    auto submit_comparing = [&] (function<float()> f) {
+    auto submit_comparing = [&] (function<int()> f) {
         { 
             unique_lock<mutex> lock(lc);
             comparing_tasks.push_back(f);
         }
         cond_comparing.notify_one();
+    };
+
+    auto submit_result = [&] (float res) {
+        {
+            unique_lock<mutex> lock(lr);
+            results.push_back(res);
+        }
+        cond_results.notify_one();
     };
 
     auto smoothing = [&] (Mat m) {
@@ -251,11 +261,36 @@ int main(int argc, char * argv[]) {
             tids[i]->join();
         }
         float diff_pixels_fraction = (float) different_pixels/m.total();
+        submit_result(diff_pixels_fraction);
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::high_resolution_clock::now() - start;
         auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
         cout << "Times passed in seconds to compare frame with background: " << usec << endl;
-        return diff_pixels_fraction;
+        return 0;
+    };
+
+    auto comparing_body = [&] () {
+        
+        function<int()> t = []() { return 0;};
+        while (!stop) {
+            {
+                unique_lock<mutex> lock(lc);
+                cond_comparing.wait(lock, [&](){return(!comparing_tasks.empty() || stop);});
+                if (!comparing_tasks.empty()) {
+                    t = comparing_tasks.front();
+                    comparing_tasks.pop_front();
+                }
+                if (stop){
+                    return 1;
+                } 
+            }
+            t();
+            //if (stop && comparing_tasks.empty()) {
+            //    return 1;
+            //}
+        }
+        
+        return 0;
     };
 
     auto smoothing_body = [&] (int i) {
@@ -286,13 +321,14 @@ int main(int argc, char * argv[]) {
     };
 
     vector<thread> tids(sw);
+    thread comparing(comparing_body);
     for (int i=0; i<sw; i++) {
         //cout << "Threads " << i << " for smoothing started" << endl;
         tids[i] = thread(smoothing_body, i);
     }
 
     // Background preparation
-    background = convert_to_greyscale(background, cw);
+    background = convert_to_greyscale(background, gw);
     background = smoothing(background);
 
     while(true) {
@@ -304,7 +340,7 @@ int main(int argc, char * argv[]) {
 
         // GREYSCALE CONVERSION
         auto start = std::chrono::high_resolution_clock::now();
-        Mat gr = convert_to_greyscale(frame, cw);
+        Mat gr = convert_to_greyscale(frame, gw);
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::high_resolution_clock::now() - start;
         auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
@@ -323,17 +359,16 @@ int main(int argc, char * argv[]) {
 
     int res_number = 0;
     float res = 0;
-    function<float()> t = []() { return 0;};
     while (res_number <= frame_number) {
         {
-            unique_lock<mutex> lock(lc);
-            cond_comparing.wait(lock, [&](){return(!comparing_tasks.empty());});
-            if (!comparing_tasks.empty()) {
-                t = comparing_tasks.front();
-                comparing_tasks.pop_front();
+            unique_lock<mutex> lock(lr);
+            cond_results.wait(lock, [&](){return(!results.empty());});
+            if (!results.empty()) {
+                res = results.front();
+                results.pop_front();
             }
+            if (res_number == frame_number) break;
         }
-        res = t();
         if (res > threshold) different_frames++;
         res_number++;
         cout << "Frames with movement detected until now: " << different_frames << " over " << res_number << " analyzed on a total of " << frame_number << endl;
@@ -348,6 +383,8 @@ int main(int argc, char * argv[]) {
     for (int i=0; i<sw; i++) {
         tids[i].join();
     }
+    //cout << "joining comparing" << endl;
+    comparing.join();
     cout << "Number of frames with movement detected: " << different_frames << endl;
     auto complessive_time_end = std::chrono::high_resolution_clock::now();
     auto complessive_duration = std::chrono::high_resolution_clock::now() - complessive_time_start;
