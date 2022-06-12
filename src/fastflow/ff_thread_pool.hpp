@@ -8,8 +8,12 @@
 #include <vector>
 #include <condition_variable>
 #include "smoother.hpp"
-#include "omparer.hpp"
+#include "../fastflow/ff_comparer.hpp"
+#include <ff.hpp>
+#include <ff/node.hpp>
+#include <ff/farm.hpp>
 
+using namespace ff;
 using namespace std;
 using namespace cv;
 
@@ -29,6 +33,8 @@ class ThreadPool {
         Mat background;
         bool stop = false;
         bool show = false;
+        ff_farm<> farm;
+        vector<Smoother *> workers;
 
         void submit_result(Mat m) {
             //TODO da rivedere
@@ -46,13 +52,21 @@ class ThreadPool {
 
     public:
         ThreadPool(Mat filter, int sw, Mat b, int cw, bool show) {
-            //this -> tasks = tasks;
             this -> results = results;
             this -> cw = cw;
             this -> sw = sw;
             this -> filter = filter;
             this -> background = b;
             this -> show = show;
+
+            farm.add_collector(NULL); 
+            
+            for (int i=0; i<sw; i++) {
+                Smoother * s = new Smoother(m, filter, this->show);
+                workers.push_back(s);
+            }
+            // add workers to farm
+            farm.add_workers(workers);
         }
 
         void submit_task(Mat m) {

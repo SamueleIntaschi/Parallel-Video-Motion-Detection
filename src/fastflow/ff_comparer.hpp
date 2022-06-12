@@ -7,7 +7,10 @@
 #include <mutex>
 #include <vector>
 #include <atomic>
+#include <ff/ff.hpp>
+#include <ff/parallel_for.hpp>
 
+using namespace ff;
 using namespace std;
 using namespace cv;
 
@@ -16,7 +19,6 @@ class Comparer {
         Mat background;
         Mat frame;
         int nw;
-        vector<pair<int,int>> chunks;
         bool show = false;
     
     public:
@@ -25,40 +27,29 @@ class Comparer {
             this -> frame = f;
             this -> nw = nw;
             this -> show = show;
-            int chunk_rows = (this->frame).rows/nw;
-            for (int i=0; i<nw; i++) {
-                auto start = i * chunk_rows;
-                auto stop = (i==(nw-1) ? f.rows : start + chunk_rows);
-                chunks.push_back(make_pair(start, stop));
-            }
         }
 
         float different_pixels() {
             auto start = std::chrono::high_resolution_clock::now();
-            vector<thread> tids(nw);
-            atomic<int> different_pixels;
-            different_pixels = 0;
+        
             Mat res = Mat((this->frame).rows, (this->frame).cols, CV_32F);
             float * pa = (float *) (this->frame).data;
             float * pb = (float *) (this->background).data;
             float * pres = (float *) res.data;
-            auto comparing = [&] (int ti) {
-                int first = (this->chunks)[ti].first;
-                int final = (this->chunks)[ti].second;
-                for(int i=first; i<final; i++) {
-                    for (int j=0; j<(this->frame).cols; j++) {
-                        pres[i * (this->frame).cols + j] = abs(pb[i * (this->frame).cols + j] - pa[i * (this->frame).cols + j]);
-                        if (pres[i * (this->frame).cols + j] > 0) different_pixels++;
-                    }
+            auto comparing = [&res, pa, pb, pres] (int i, int &diff_pixels) {
+                for (int j=0; j<res.cols; j++) {
+                    pres[i * res.cols + j] = abs(pb[i * res.cols + j] - pa[i * res.cols + j]);
+                    if (pres[i * res.cols + j] > 0) diff_pixels++;
                 }
-
             };
-            for (int i=0; i<(this->nw); i++) {
-                tids[i] = thread(comparing, i);
-            }
-            for (int i=0; i<(this->nw); i++) {
-                tids[i].join();
-            }
+            auto reduce = [] (int &s, int e) {
+                s += e;
+            };
+
+            int different_pixels = 0;
+            ParallelForReduce<int> pf(nw, true);
+            pf.parallel_reduce(different_pixels, 0, 0, (this->frame).rows, 1, comparing, reduce, nw);
+
             float diff_pixels_fraction = (float) different_pixels/(this->frame).total();
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::high_resolution_clock::now() - start;

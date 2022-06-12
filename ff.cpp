@@ -6,7 +6,7 @@
 #include <queue>
 #include <mutex>
 #include <vector>
-#include "src/cthreads/greyscale_converter.hpp"
+#include "src/fastflow/ff_greyscale_converter.hpp"
 #include "src/cthreads/thread_pool.hpp"
 
 

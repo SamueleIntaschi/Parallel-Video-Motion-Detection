@@ -18,13 +18,14 @@ class GreyscaleConverter {
         int nw;
         vector<pair<int,int>> chunks;
         int chunk_rows;
+        bool show = false;
 
     public:
 
-        GreyscaleConverter(Mat m, int nw) {
+        GreyscaleConverter(Mat m, int nw, bool show) {
             this -> m = m;
             this -> nw = nw;
-            //this -> tids = tids.reserve(nw);
+            this -> show = show;
             this -> chunk_rows = m.rows / nw;            
             for (int i=0; i<nw; i++) {
                 auto start = i*chunk_rows;
@@ -67,6 +68,10 @@ class GreyscaleConverter {
             auto duration = std::chrono::high_resolution_clock::now() - start;
             auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
             cout << "Times passed to convert to greyscale: " << usec << " usec" << endl;
+            if (show) {
+                imshow("Frame", gr);
+                waitKey(25);
+            }
             return gr;
         }
 };

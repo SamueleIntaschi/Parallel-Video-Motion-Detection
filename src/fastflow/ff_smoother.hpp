@@ -7,11 +7,14 @@
 #include <mutex>
 #include <vector>
 #include <atomic>
+#include <ff.hpp>
+#include <ff/node.hpp>
 
+using namespace ff;
 using namespace std;
 using namespace cv;
 
-class Smoother {
+class Smoother:: ff_node_tt<Mat> {
     private:
         Mat m;
         Mat filter;
@@ -45,14 +48,14 @@ class Smoother {
         }
 
     public:
-        //Smoother(Mat m, Mat filter, int nw, deque<function<Mat()>> tasks, deque<function<float()>> results, function<float()> f) {
+
         Smoother(Mat m, Mat filter, bool show) {
             this -> m = m;
             this -> filter = filter;
             this -> show = show;
         }
 
-        Mat smoothing() {
+        void * svc() {
             auto start = std::chrono::high_resolution_clock::now();
             float * sp = (float *) (this -> m).data;
             for(int i=0; i<(this->m).rows; i++) {
