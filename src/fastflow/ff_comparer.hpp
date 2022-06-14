@@ -20,13 +20,15 @@ class Comparer {
         Mat frame;
         int nw;
         bool show = false;
+        float threshold;
     
     public:
-        Comparer(Mat b, Mat f, int nw, bool show) {
+        Comparer(Mat b, Mat f, int nw, float threshold, bool show) {
             this -> background = b;
             this -> frame = f;
             this -> nw = nw;
             this -> show = show;
+            this -> threshold = threshold;
         }
 
         float different_pixels() {
@@ -36,10 +38,10 @@ class Comparer {
             float * pa = (float *) (this->frame).data;
             float * pb = (float *) (this->background).data;
             float * pres = (float *) res.data;
-            auto comparing = [&res, pa, pb, pres] (int i, int &diff_pixels) {
+            auto comparing = [&res, pa, pb, pres, this] (int i, int &diff_pixels) {
                 for (int j=0; j<res.cols; j++) {
                     pres[i * res.cols + j] = abs(pb[i * res.cols + j] - pa[i * res.cols + j]);
-                    if (pres[i * res.cols + j] > 0) diff_pixels++;
+                    if (pres[i * res.cols + j] > this->threshold) diff_pixels++;
                 }
             };
             auto reduce = [] (int &s, int e) {

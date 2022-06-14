@@ -7,18 +7,17 @@
 #include <mutex>
 #include <vector>
 #include <atomic>
-#include <ff.hpp>
+#include <ff/ff.hpp>
 #include <ff/node.hpp>
 
 using namespace ff;
 using namespace std;
 using namespace cv;
 
-class Smoother:: ff_node_tt<Mat> {
+class Smoother: ff_node_t<Mat> {
     private:
         Mat m;
         Mat filter;
-        vector<thread> tids;
         bool show = false;
 
         Mat pixel_mul(Mat a, Mat b) {
@@ -55,7 +54,7 @@ class Smoother:: ff_node_tt<Mat> {
             this -> show = show;
         }
 
-        void * svc() {
+        Mat svc() {
             auto start = std::chrono::high_resolution_clock::now();
             float * sp = (float *) (this -> m).data;
             for(int i=0; i<(this->m).rows; i++) {
@@ -72,7 +71,6 @@ class Smoother:: ff_node_tt<Mat> {
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::high_resolution_clock::now() - start;
             auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
-            cout << "Times passed for smoothing: " << usec << " usec" << endl;
             if (show) {
                 imshow("Smoothing", (this -> m));
                 waitKey(25);

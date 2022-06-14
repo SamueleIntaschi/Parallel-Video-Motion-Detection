@@ -7,9 +7,9 @@
 #include <mutex>
 #include <vector>
 #include <condition_variable>
-#include "smoother.hpp"
-#include "../fastflow/ff_comparer.hpp"
-#include <ff.hpp>
+#include "ff_smoother.hpp"
+#include "ff_comparer.hpp"
+#include <ff/ff.hpp>
 #include <ff/node.hpp>
 #include <ff/farm.hpp>
 

@@ -34,6 +34,33 @@ class GreyscaleConverter {
             }
         }
 
+        float get_avg_intensity(Mat bn) {
+            int channels = bn.channels();
+            if (channels > 1) return -1;
+            float * p = (float *) bn.data;
+            atomic<float> sum;
+            sum = 0;
+            vector<thread> tids(this -> nw);
+            auto f = [&] (int ti) {
+                int first = (this -> chunks[ti]).first;
+                int final = (this -> chunks[ti]).second;
+                for(int i=first; i<final; i++) {
+                    for (int j=0; j<(this->m).cols; j++) {
+                        sum = sum + p[i * m.cols + j];
+                    }
+                } 
+                return;
+            };
+            for (int i=0; i<(this->nw); i++) {
+                tids[i] = thread(f, i);
+            }
+            for (int i=0; i<(this->nw); i++) {
+                tids[i].join();
+            }
+            float avg = sum / bn.total();
+            return avg;
+        }
+
         Mat convert_to_greyscale() {
             Mat gr = Mat((this -> m).rows, (this -> m).cols, CV_32F);
             vector<thread> tids(this -> nw);

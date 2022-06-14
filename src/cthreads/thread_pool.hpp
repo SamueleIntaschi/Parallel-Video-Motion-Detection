@@ -8,7 +8,7 @@
 #include <vector>
 #include <condition_variable>
 #include "smoother.hpp"
-#include "omparer.hpp"
+#include "comparer.hpp"
 
 using namespace std;
 using namespace cv;
@@ -29,11 +29,12 @@ class ThreadPool {
         Mat background;
         bool stop = false;
         bool show = false;
+        float threshold;
 
         void submit_result(Mat m) {
             //TODO da rivedere
             auto f = [this] (Mat m) {
-                Comparer c(this->background, m, this->cw, this->show);
+                Comparer c(this->background, m, this->cw, this->threshold, this->show);
                 return c.different_pixels();
             };
             auto fb = (bind(f, m));
@@ -45,7 +46,7 @@ class ThreadPool {
         }
 
     public:
-        ThreadPool(Mat filter, int sw, Mat b, int cw, bool show) {
+        ThreadPool(Mat filter, int sw, Mat b, int cw, float threshold, bool show) {
             //this -> tasks = tasks;
             this -> results = results;
             this -> cw = cw;
@@ -53,6 +54,7 @@ class ThreadPool {
             this -> filter = filter;
             this -> background = b;
             this -> show = show;
+            this -> threshold = threshold;
         }
 
         void submit_task(Mat m) {

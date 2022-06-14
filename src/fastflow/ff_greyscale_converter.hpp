@@ -29,12 +29,31 @@ class GreyscaleConverter {
             this -> show = show;
         }
 
-        Mat convert_to_greyscale() {
+        float get_avg_intensity(Mat bn) {
+            int channels = bn.channels();
+            if (channels > 1) return -1;
+            float * p = (float *) bn.data;
+            float sum = {0.0};
+            auto f = [&] (const int i, float &s) {
+                for (int j=0; j<(this->m).cols; j++) {
+                    s = s + p[i * m.cols + j];
+                }
+            }; 
+            auto reduce = [] (float &s, float e) {
+                s += e;
+            };
+            ParallelForReduce<float> pf(this->nw, true);
+            pf.parallel_reduce(sum, 0, 0, bn.rows, 1, f, reduce, nw);
+            float avg = sum / bn.total();
+            return avg;
+        }
+
+        Mat * convert_to_greyscale() {
             auto start = std::chrono::high_resolution_clock::now();
 
-            Mat gr = Mat((this -> m).rows, (this -> m).cols, CV_32F);
+            Mat * gr = new Mat((this -> m).rows, (this -> m).cols, CV_32F);
             int channels = (this -> m).channels();
-            float * pl = (float *) gr.data;
+            float * pl = (float *) (*gr).data;
             float * pm = (float *) (this -> m).data;
 
             auto greyscale_conversion = [&gr, this, channels, pl, pm] (const int i) {
@@ -42,10 +61,10 @@ class GreyscaleConverter {
                 float b = 0;
                 float g = 0;
                 for (int j=0; j<(this->m).cols; j++) {
-                    r = (float) pm[i * gr.cols * channels + j * channels];
-                    g = (float) pm[i * gr.cols * channels + j * channels + 1];
-                    b = (float) pm[i * gr.cols * channels + j * channels + 2];
-                    pl[i * gr.cols + j] = (float) (r + g + b) / channels;
+                    r = (float) pm[i * m.cols * channels + j * channels];
+                    g = (float) pm[i * m.cols * channels + j * channels + 1];
+                    b = (float) pm[i * m.cols * channels + j * channels + 2];
+                    pl[i * m.cols + j] = (float) (r + g + b) / channels;
                 }
                 return;
             };
@@ -58,7 +77,7 @@ class GreyscaleConverter {
             auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
             cout << "Times passed to convert to greyscale: " << usec << " usec" << endl;
             if (show) {
-                imshow("Frame", gr);
+                imshow("Frame", *gr);
                 waitKey(25);
             }
             return gr;

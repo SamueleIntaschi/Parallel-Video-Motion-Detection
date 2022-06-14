@@ -46,11 +46,7 @@ class Smoother {
 
     public:
         //Smoother(Mat m, Mat filter, int nw, deque<function<Mat()>> tasks, deque<function<float()>> results, function<float()> f) {
-        Smoother(Mat m, Mat filter, bool show) {
-            this -> m = m;
-            this -> filter = filter;
-            this -> show = show;
-        }
+        Smoother(Mat m, Mat filter, bool show): m(m), filter(filter), show(show) {}
 
         Mat smoothing() {
             auto start = std::chrono::high_resolution_clock::now();

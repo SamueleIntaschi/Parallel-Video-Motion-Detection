@@ -1,0 +1,13 @@
+          drifting_car(5,8)    seagulls_low1 
+
+ff ->      158903710,364
+
+native ->  129726258,409
+	     129326744,437
+
+video,type,percent,nw,usec,frames,date
+
+drifting_car,native,5,8,129726258,409,14-6
+drifting_car,native,5,8,129326744,437,14-6
+drifting_car,ff,5,8,158903710,364,14-6
+drifting_car,ff,5,18,136855989,310,14-6

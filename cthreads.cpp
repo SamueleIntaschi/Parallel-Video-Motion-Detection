@@ -35,7 +35,7 @@ int main(int argc, char * argv[]) {
     cout << "Thread use: " << cw << " for conversion to greyscale and comparing, " << sw << " for smoothing" << endl;
     // Start time measurement
     auto complessive_time_start = std::chrono::high_resolution_clock::now();
-    float threshold = (float) k / 100;
+    float percent = (float) k / 100;
     VideoCapture cap(filename); 
     Mat h1 = Mat::ones(3, 3, CV_32F); // Filter matrix for smoothing
     h1 = (Mat_<float>) (1/9 * h1);
@@ -57,9 +57,12 @@ int main(int argc, char * argv[]) {
     background.convertTo(background, CV_32F, 1.0/255.0);
     GreyscaleConverter converter(background, cw, show);
     background = converter.convert_to_greyscale();
+    float avg_intensity = converter.get_avg_intensity(background);
+    float threshold = (float) avg_intensity / 3;
+    cout << "Backgorund average intensity: " << avg_intensity << endl;
     deque<function<float()>> results;
 
-    ThreadPool sm_pool(h1, sw, background, cw, show);
+    ThreadPool sm_pool(h1, sw, background, cw, threshold, show);
     sm_pool.start_pool();
 
     while (true) {
@@ -82,11 +85,12 @@ int main(int argc, char * argv[]) {
     float res = 0;
     while (res_number <= frame_number) {
         res = (sm_pool.get_result())();
+        cout << res << " " << percent << endl;
         if (res == -1) {
             cout << "fine dei giochi" << endl;
             break;
         }
-        if (res > threshold) different_frames++;
+        if (res > percent) different_frames++;
         res_number++;
         cout << "Frames with movement detected until now: " << different_frames << " over " << res_number << " analyzed on a total of " << frame_number << endl;
         if (res_number == frame_number) break;
