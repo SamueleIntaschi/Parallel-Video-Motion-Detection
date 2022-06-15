@@ -37,16 +37,20 @@ class GreyscaleConverter {
         float get_avg_intensity(Mat bn) {
             int channels = bn.channels();
             if (channels > 1) return -1;
+            mutex l;
             float * p = (float *) bn.data;
-            atomic<float> sum;
-            sum = 0;
+            //atomic<float> sum;
+            float sum = 0;
             vector<thread> tids(this -> nw);
             auto f = [&] (int ti) {
                 int first = (this -> chunks[ti]).first;
                 int final = (this -> chunks[ti]).second;
                 for(int i=first; i<final; i++) {
-                    for (int j=0; j<(this->m).cols; j++) {
-                        sum = sum + p[i * m.cols + j];
+                    for (int j=0; j<bn.cols; j++) {
+                        {
+                            unique_lock<mutex> lock(l);
+                            sum = sum + p[i * bn.cols + j];
+                        }
                     }
                 } 
                 return;

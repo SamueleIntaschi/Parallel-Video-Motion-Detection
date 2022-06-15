@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include "opencv2/opencv.hpp"
 #include <thread>
 #include <chrono> 
@@ -12,7 +13,7 @@ using namespace ff;
 using namespace std;
 using namespace cv;
 
-//TODO try with flag NO_DEFAULT_MAPPING
+//TODO there are probably problems because different number of threads gives different final results
 
 int main(int argc, char * argv[]) {
     if (argc == 1) {
@@ -66,11 +67,22 @@ int main(int argc, char * argv[]) {
     ff_Pipe<Mat> pipe(cnv, farm, cmp);
 
     std::cout << "Starting application ..." << std::endl;
-    cout << pipe.run_and_wait_end() << endl;;
+    if (pipe.run_and_wait_end() < 0) cout << "fastflow error" << endl;
+
+    int different_frames = cmp->get_different_frames_number();
 
     auto complessive_time_end = std::chrono::high_resolution_clock::now();
     auto complessive_duration = std::chrono::high_resolution_clock::now() - complessive_time_start;
     auto complessive_usec = std::chrono::duration_cast<std::chrono::microseconds>(complessive_duration).count();
     cout << "Total time passed: " << complessive_usec << endl;
+
+    ofstream file;
+    time_t now = time(0);
+    char* date = (char *) ctime(&now);
+    date[strlen(date) - 1] = '\0';
+    file.open("results.txt", std::ios_base::app);
+    file << date << " - " << filename << ",ff," << k << "," << nw << "," << complessive_usec << "," << different_frames << endl;
+    file.close();
+
     return 0;
 };

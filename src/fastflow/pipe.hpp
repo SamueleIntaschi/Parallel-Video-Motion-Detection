@@ -44,8 +44,6 @@ class Converter: public ff_monode_t<Mat> {
 
             }
             (this->cap).release();
-            cout << "fine dei frame" << endl;
-            //ff_send_out(EOS);
             return EOS;
         }
 };
@@ -61,14 +59,9 @@ class SmoothingWorker: public ff_node_t<Mat> {
 
         Mat * svc(Mat * m) {
             
-            if (m == EOS) {
-                cout << "fine dei frame 2";
-                return EOS;
-            }
-            else {
+            if (m != EOS) {
                 Smoother s(*m, this->filter, this->show);
                 *m = s.smoothing();
-                cout <<  "Smoothing completed" << endl;
                 return(m);
             }
             
@@ -85,13 +78,13 @@ class Comparing: public ff_minode_t<Mat> {
         int cw;
         int different_frames = 0;
         int frame_number = 0;
+        bool has_finished = false;
 
     public:
         Comparing(Mat background, int cw, float percent, float threshold, bool show): background(background), cw(cw), percent(percent), threshold(threshold), show(show) {}
 
         Mat * svc(Mat * m) {
             if (m != EOS) {
-                cout << "compareer task" << endl;
                 Comparer c(this->background, *m,this->cw, this->threshold, this->show);
                 float diff = c.different_pixels();
                 cout << diff << " " << this->percent << endl;
@@ -105,5 +98,11 @@ class Comparing: public ff_minode_t<Mat> {
 
         void svc_end() {
             cout << "Number of frames with movement detected: " << different_frames << endl;
+            this -> has_finished = true;
+        }
+
+        int get_different_frames_number() {
+            if (this -> has_finished) return this->different_frames;
+            else return -1;
         }
 };

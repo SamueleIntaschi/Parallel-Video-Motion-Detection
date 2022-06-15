@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include "opencv2/opencv.hpp"
 #include <thread>
 #include <chrono> 
@@ -6,13 +7,13 @@
 #include <queue>
 #include <mutex>
 #include <vector>
+#include <ctime>
 #include "src/cthreads/greyscale_converter.hpp"
 #include "src/cthreads/thread_pool.hpp"
 
 
 using namespace std;
 using namespace cv;
-
 
 int main(int argc, char * argv[]) {
     if (argc == 1) {
@@ -103,5 +104,14 @@ int main(int argc, char * argv[]) {
     auto complessive_duration = std::chrono::high_resolution_clock::now() - complessive_time_start;
     auto complessive_usec = std::chrono::duration_cast<std::chrono::microseconds>(complessive_duration).count();
     cout << "Total time passed: " << complessive_usec << endl;
+
+    ofstream file;
+    time_t now = time(0);
+    char* date = (char *) ctime(&now);
+    date[strlen(date) - 1] = '\0';
+    file.open("results.txt", std::ios_base::app);
+    file << date << " - " << filename << ",native," << k << "," << nw << "," << complessive_usec << "," << different_frames << endl;
+    file.close();
+    
     return 0;
 };

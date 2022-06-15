@@ -33,10 +33,10 @@ class GreyscaleConverter {
             int channels = bn.channels();
             if (channels > 1) return -1;
             float * p = (float *) bn.data;
-            float sum = {0.0};
+            float sum = 0;
             auto f = [&] (const int i, float &s) {
-                for (int j=0; j<(this->m).cols; j++) {
-                    s = s + p[i * m.cols + j];
+                for (int j=0; j<bn.cols; j++) {
+                    s = s + p[i * bn.cols + j];
                 }
             }; 
             auto reduce = [] (float &s, float e) {

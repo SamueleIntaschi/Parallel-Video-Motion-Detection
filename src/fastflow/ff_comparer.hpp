@@ -38,18 +38,17 @@ class Comparer {
             float * pa = (float *) (this->frame).data;
             float * pb = (float *) (this->background).data;
             float * pres = (float *) res.data;
-            auto comparing = [&res, pa, pb, pres, this] (int i, int &diff_pixels) {
+            int different_pixels = 0;
+            auto comparing = [&] (int i, int &diff_pixels) {
                 for (int j=0; j<res.cols; j++) {
                     pres[i * res.cols + j] = abs(pb[i * res.cols + j] - pa[i * res.cols + j]);
                     if (pres[i * res.cols + j] > this->threshold) diff_pixels++;
                 }
             };
-            auto reduce = [] (int &s, int e) {
-                s += e;
+            auto reduce = [] (int &diff_pixels, int e) {
+                diff_pixels += e;
             };
-
-            int different_pixels = 0;
-            ParallelForReduce<int> pf(nw, true);
+            ParallelForReduce<int> pf((this->nw), true);
             pf.parallel_reduce(different_pixels, 0, 0, (this->frame).rows, 1, comparing, reduce, nw);
 
             float diff_pixels_fraction = (float) different_pixels/(this->frame).total();
