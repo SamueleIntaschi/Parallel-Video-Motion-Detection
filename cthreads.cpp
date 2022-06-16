@@ -34,8 +34,6 @@ int main(int argc, char * argv[]) {
     if (cw == 0) cw = 1;
     if (sw == 0) sw = 1;
     cout << "Thread use: " << cw << " for conversion to greyscale and comparing, " << sw << " for smoothing" << endl;
-    // Start time measurement
-    auto complessive_time_start = std::chrono::high_resolution_clock::now();
     float percent = (float) k / 100;
     VideoCapture cap(filename); 
     Mat h1 = Mat::ones(3, 3, CV_32F); // Filter matrix for smoothing
@@ -51,6 +49,8 @@ int main(int argc, char * argv[]) {
     frame_number = 0;
     different_frames = 0;
 
+    auto complessive_time_start = std::chrono::high_resolution_clock::now();
+
     // Take first frame as background
     Mat background; // The first frame is used as background image
     cap >> background;
@@ -58,9 +58,12 @@ int main(int argc, char * argv[]) {
     background.convertTo(background, CV_32F, 1.0/255.0);
     GreyscaleConverter converter(background, cw, show);
     background = converter.convert_to_greyscale();
+    Smoother s(background, h1, show);
+    background = s.smoothing();
     float avg_intensity = converter.get_avg_intensity(background);
     float threshold = (float) avg_intensity / 3;
-    cout << "Backgorund average intensity: " << avg_intensity << endl;
+    cout << "Frames resolution: " << background.rows << " x " << background.cols << endl;
+    cout << "Background average intensity: " << avg_intensity << endl;
     deque<function<float()>> results;
 
     ThreadPool sm_pool(h1, sw, background, cw, threshold, show);
@@ -110,7 +113,7 @@ int main(int argc, char * argv[]) {
     char* date = (char *) ctime(&now);
     date[strlen(date) - 1] = '\0';
     file.open("results.txt", std::ios_base::app);
-    file << date << " - " << filename << ",native," << k << "," << nw << "," << complessive_usec << "," << different_frames << endl;
+    file << date << " - " << filename << ",native," << k << "," << nw << "," << show << "," << complessive_usec << "," << different_frames << endl;
     file.close();
     
     return 0;

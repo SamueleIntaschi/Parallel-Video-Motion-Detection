@@ -37,8 +37,9 @@ class Converter: public ff_monode_t<Mat> {
                 frame.convertTo(frame, CV_32F, 1.0/255.0);
 
                 // Data parallel conversion
+                Mat * m = new Mat(frame.rows, frame.cols, CV_32F);
                 GreyscaleConverter converter(frame, cw, this->show);
-                Mat * m = converter.convert_to_greyscale();
+                *m = converter.convert_to_greyscale();
                 ff_send_out(m);
                 frame_number++;
 

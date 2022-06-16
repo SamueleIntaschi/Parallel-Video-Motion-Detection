@@ -40,18 +40,19 @@ class Comparer {
             float * pres = (float *) res.data;
             int different_pixels = 0;
             auto comparing = [&] (int i, int &diff_pixels) {
-                for (int j=0; j<res.cols; j++) {
-                    pres[i * res.cols + j] = abs(pb[i * res.cols + j] - pa[i * res.cols + j]);
-                    if (pres[i * res.cols + j] > this->threshold) diff_pixels++;
+                for (int j=0; j<(this->frame).cols; j++) {
+                    pres[i * (this->frame).cols + j] = abs(pb[i * (this->frame).cols + j] - pa[i * (this->frame).cols + j]);
+                    if (pres[i * (this->frame).cols + j] > this->threshold) diff_pixels++;
                 }
             };
             auto reduce = [] (int &diff_pixels, int e) {
                 diff_pixels += e;
             };
-            ParallelForReduce<int> pf((this->nw), true);
-            pf.parallel_reduce(different_pixels, 0, 0, (this->frame).rows, 1, comparing, reduce, nw);
+            ParallelForReduce<int> pf(this->nw);
+            pf.parallel_reduce(different_pixels, 0, 0, (this->frame).rows, 1, comparing, reduce, this->nw);
 
             float diff_pixels_fraction = (float) different_pixels/(this->frame).total();
+            cout << diff_pixels_fraction << " " << different_pixels << " " << threshold << endl;
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::high_resolution_clock::now() - start;
             auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();

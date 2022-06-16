@@ -4,8 +4,11 @@ LDFLAGS = -pthread -O3 `pkg-config --cflags opencv4` `pkg-config --libs opencv4`
 
 EXE = native ff seq
 
-ff: ff.cpp 
-	$(CXX) -DNO_DEFAULT_MAPPING=tru -o ff ff.cpp $(LDFLAGS)
+ff: ff.cpp
+	$(CXX) -o ff ff.cpp $(LDFLAGS)
+
+ffnomap: ff.cpp 
+	$(CXX) -DNO_DEFAULT_MAPPING=true -o ff ff.cpp $(LDFLAGS)
 
 cthreads: cthreads.cpp
 	$(CXX) -o native cthreads.cpp $(LDFLAGS)

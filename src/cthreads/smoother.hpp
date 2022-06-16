@@ -25,6 +25,7 @@ class Smoother {
             float * pres = (float *) res.data;
             for(int i=0; i<a.rows; i++) {
                 for (int j=0; j<a.cols; j++) {
+                    //cout << pa[i * a.cols + j] << " " << pb[i * a.cols + j] << endl;
                     pres[i * a.cols + j] = pa[i * a.cols + j] * pb[i * a.cols + j];
                 }
             }
@@ -58,7 +59,9 @@ class Smoother {
                         //Mat submatrix = (this->m)(r);//.clone();
                         Mat submatrix = (this->m)(r).clone();
                         //*sp++ = smoothing_px(submatrix, h1);
+                        float val = sp[i*m.cols + j];
                         sp[i * m.cols + j] = smoothing_px(submatrix, (this->filter));
+                        //cout << sp[i * m.cols + j] << endl;
                     }
                 }
             }

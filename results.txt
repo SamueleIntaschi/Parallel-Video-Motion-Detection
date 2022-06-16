@@ -1,31 +1,11 @@
-date - filename,type,k,nw,time,result
-
-Wed Jun 15 14:38:40 2022 - Videos/seagulls_low1.mp4,native,10,8,66819249,22
-Wed Jun 15 14:41:08 2022 - Videos/seagulls_low1.mp4,native,10,8,67592045,22
-Wed Jun 15 14:48:02 2022 - Videos/seagulls_low1.mp4,native,10,8,63930356,22
-Wed Jun 15 14:57:43 2022 - Videos/drifting_car.mp4,native,5,8,155598325,368
-Wed Jun 15 15:28:22 2022 - Videos/seagulls_low1.mp4,ff,10,12,61133967,41
-Wed Jun 15 15:34:18 2022 - Videos/seagulls_low1.mp4,ff,10,60,57065603,73
-Wed Jun 15 15:36:15 2022 - Videos/seagulls_low1.mp4,ff,10,2,106227388,28
-Wed Jun 15 15:37:44 2022 - Videos/seagulls_low1.mp4,native,10,60,54402421,23
-Wed Jun 15 15:39:45 2022 - Videos/seagulls_low1.mp4,ff,10,4,75410074,30
-Wed Jun 15 15:41:19 2022 - Videos/seagulls_low1.mp4,ff,10,8,60795258,35
-Wed Jun 15 15:42:30 2022 - Videos/seagulls_low1.mp4,native,10,8,60114066,22
-Wed Jun 15 15:44:48 2022 - Videos/seagulls_low1.mp4,ff,10,100,76145259,96
-Wed Jun 15 15:47:57 2022 - Videos/seagulls_low1.mp4,ff,10,1,150609363,29
-Wed Jun 15 15:49:04 2022 - Videos/seagulls_low1.mp4,ff,10,10,60827356,39
-Wed Jun 15 15:50:29 2022 - Videos/seagulls_low1.mp4,ff,10,10,63382790,38
-Wed Jun 15 15:51:44 2022 - Videos/seagulls_low1.mp4,native,10,800,61593958,22
-Wed Jun 15 15:53:05 2022 - Videos/seagulls_low1.mp4,ff,10,800,525762,-1
-Wed Jun 15 15:54:11 2022 - Videos/seagulls_low1.mp4,ff,10,8,57344301,27
-Wed Jun 15 16:17:47 2022 - Videos/drifting_car.mp4,ff,10,8,144814347,253
-Wed Jun 15 16:20:34 2022 - Videos/drifting_car.mp4,native,10,8,150494070,254
-Wed Jun 15 16:23:30 2022 - Videos/drifting_car.mp4,ff,10,24,152997446,228
-Wed Jun 15 16:27:35 2022 - Videos/drifting_car.mp4,native,10,24,130555820,254
-Wed Jun 15 16:31:23 2022 - Videos/drifting_car.mp4,ff,10,24,130761222,214
-Wed Jun 15 16:34:13 2022 - Videos/drifting_car.mp4,ff,10,24,144019560,225
-Wed Jun 15 16:40:09 2022 - Videos/drifting_car.mp4,ff,10,100,170665401,240
-Wed Jun 15 16:43:31 2022 - Videos/drifting_car.mp4,ff,10,100,173083646,244
-Wed Jun 15 16:45:55 2022 - Videos/drifting_car.mp4,native,10,100,134365606,254
-Wed Jun 15 16:48:56 2022 - Videos/drifting_car.mp4,ff,1,10,147715360,516
-Wed Jun 15 16:51:28 2022 - Videos/drifting_car.mp4,native,1,10,142169081,531
+Thu Jun 16 15:34:41 2022 - Videos/people_low2.mp4,native,1,8,1,116558975,340
+Thu Jun 16 15:36:43 2022 - Videos/people_low2.mp4,native,1,8,0,38885074,340
+Thu Jun 16 15:38:13 2022 - Videos/people_low2.mp4,ff,1,8,0,38401277,340  no map
+Thu Jun 16 15:43:19 2022 - Videos/people_low3.mp4,native,1,8,0,45847249,446
+Thu Jun 16 15:44:58 2022 - Videos/people_low3.mp4,ff,1,8,50109315,446   no map
+Thu Jun 16 15:46:21 2022 - Videos/people_low1.mp4,native,1,24,0,20384838,472
+Thu Jun 16 15:48:11 2022 - Videos/people_low1.mp4,ff,1,24,0,95484305,472   no map
+Thu Jun 16 15:57:46 2022 - Videos/people_low1.mp4,ff,1,8,0,36216849,472
+Thu Jun 16 15:59:11 2022 - Videos/people_low1.mp4,native,1,8,0,20399875,472
+Thu Jun 16 16:03:59 2022 - Videos/drifting_car.mp4,native,1,8,0,130302423,518
+Thu Jun 16 16:07:18 2022 - Videos/drifting_car.mp4,native,10,8,0,134987704,240

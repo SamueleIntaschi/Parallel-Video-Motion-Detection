@@ -40,7 +40,6 @@ class Comparer {
             auto start = std::chrono::high_resolution_clock::now();
             vector<thread> tids(nw);
             atomic<int> different_pixels;
-            atomic<int> cnt;
             different_pixels = 0;
             Mat res = Mat((this->frame).rows, (this->frame).cols, CV_32F);
             float * pa = (float *) (this->frame).data;
