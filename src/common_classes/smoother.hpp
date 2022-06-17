@@ -17,6 +17,7 @@ class Smoother {
         Mat filter;
         vector<thread> tids;
         bool show = false;
+        bool times = false;
 
         Mat pixel_mul(Mat a, Mat b) {
             Mat res = Mat(a.rows, a.cols, CV_32F);
@@ -25,7 +26,6 @@ class Smoother {
             float * pres = (float *) res.data;
             for(int i=0; i<a.rows; i++) {
                 for (int j=0; j<a.cols; j++) {
-                    //cout << pa[i * a.cols + j] << " " << pb[i * a.cols + j] << endl;
                     pres[i * a.cols + j] = pa[i * a.cols + j] * pb[i * a.cols + j];
                 }
             }
@@ -33,7 +33,6 @@ class Smoother {
         }
 
         float smoothing_px(Mat sub, Mat h1) {
-            //Mat mul = sub.mul(h1);
             Mat mul = pixel_mul(sub, h1);
             float * p = (float *) mul.data;
             float res = 0;
@@ -46,8 +45,7 @@ class Smoother {
         }
 
     public:
-        //Smoother(Mat m, Mat filter, int nw, deque<function<Mat()>> tasks, deque<function<float()>> results, function<float()> f) {
-        Smoother(Mat m, Mat filter, bool show): m(m), filter(filter), show(show) {}
+        Smoother(Mat m, Mat filter, bool show, bool times): m(m), filter(filter), show(show), times(times) {}
 
         Mat smoothing() {
             auto start = std::chrono::high_resolution_clock::now();
@@ -56,19 +54,17 @@ class Smoother {
                 for (int j=0; j<(this->m).cols; j++) { 
                     cv::Rect r(j-1, i-1, 3, 3);
                     if (r.x >= 0 && r.y >= 0 && r.x + r.width <= (this->m).cols && r.y + r.height <= (this->m).rows) {
-                        //Mat submatrix = (this->m)(r);//.clone();
                         Mat submatrix = (this->m)(r).clone();
-                        //*sp++ = smoothing_px(submatrix, h1);
                         float val = sp[i*m.cols + j];
                         sp[i * m.cols + j] = smoothing_px(submatrix, (this->filter));
-                        //cout << sp[i * m.cols + j] << endl;
                     }
                 }
             }
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::high_resolution_clock::now() - start;
-            auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
-            cout << "Times passed for smoothing: " << usec << " usec" << endl;
+            if (times) {
+                auto duration = std::chrono::high_resolution_clock::now() - start;
+                auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+                cout << "Times passed for smoothing: " << usec << " usec" << endl;
+            }
             if (show) {
                 imshow("Smoothing", (this -> m));
                 waitKey(25);

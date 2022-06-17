@@ -20,20 +20,21 @@ class Comparer {
         Mat frame;
         int nw;
         bool show = false;
+        bool times = false;
         float threshold;
     
     public:
-        Comparer(Mat b, Mat f, int nw, float threshold, bool show) {
+    
+        Comparer(Mat b, Mat f, int nw, float threshold, bool show, bool times) {
             this -> background = b;
             this -> frame = f;
             this -> nw = nw;
             this -> show = show;
+            this -> times = times;
             this -> threshold = threshold;
         }
 
         float different_pixels() {
-            auto start = std::chrono::high_resolution_clock::now();
-        
             Mat res = Mat((this->frame).rows, (this->frame).cols, CV_32F);
             float * pa = (float *) (this->frame).data;
             float * pb = (float *) (this->background).data;
@@ -48,15 +49,15 @@ class Comparer {
             auto reduce = [] (int &diff_pixels, int e) {
                 diff_pixels += e;
             };
+            auto start = std::chrono::high_resolution_clock::now();
             ParallelForReduce<int> pf(this->nw);
             pf.parallel_reduce(different_pixels, 0, 0, (this->frame).rows, 1, comparing, reduce, this->nw);
-
             float diff_pixels_fraction = (float) different_pixels/(this->frame).total();
-            cout << diff_pixels_fraction << " " << different_pixels << " " << threshold << endl;
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::high_resolution_clock::now() - start;
-            auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
-            cout << "Times passed to compare frame with background: " << usec << " usec" << endl;
+            if (times) {
+                auto duration = std::chrono::high_resolution_clock::now() - start;
+                auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+                cout << "Times passed to compare frame with background: " << usec << " usec" << endl;
+            }
             if (show) {
                 imshow("Background Subtraction", res);
                 waitKey(25);

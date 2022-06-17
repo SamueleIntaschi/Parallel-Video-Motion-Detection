@@ -7,12 +7,16 @@
 #include <mutex>
 #include <vector>
 #include "ff_greyscale_converter.hpp"
-#include "../cthreads/smoother.hpp"
+#include "../common_classes/smoother.hpp"
 #include "ff_comparer.hpp"
 #include <ff/ff.hpp>
 #include <ff/node.hpp>
 #include <ff/farm.hpp>
 #include <ff/pipeline.hpp>
+
+using namespace ff;
+using namespace std;
+using namespace cv;
 
 class Converter: public ff_monode_t<Mat> {
 
@@ -20,12 +24,13 @@ class Converter: public ff_monode_t<Mat> {
         int cw;
         string filename;
         int frame_number = 0;
-        bool show;
+        bool show = false;
+        bool times = false;
         VideoCapture cap;
 
     public:
 
-        Converter(VideoCapture cap, int cw, bool show): cap(cap), cw(cw), show(show) {}
+        Converter(VideoCapture cap, int cw, bool show, bool times): cap(cap), cw(cw), show(show), times(times) {}
 
         Mat * svc (Mat *) {
 
@@ -38,7 +43,7 @@ class Converter: public ff_monode_t<Mat> {
 
                 // Data parallel conversion
                 Mat * m = new Mat(frame.rows, frame.cols, CV_32F);
-                GreyscaleConverter converter(frame, cw, this->show);
+                GreyscaleConverter converter(frame, cw, this->show, this->times);
                 *m = converter.convert_to_greyscale();
                 ff_send_out(m);
                 frame_number++;
@@ -51,17 +56,17 @@ class Converter: public ff_monode_t<Mat> {
 
 class SmoothingWorker: public ff_node_t<Mat> {
     private:
-        bool show;
+        bool show = false;
+        bool times = false;
         Mat filter;
-        //int cw;
 
     public:
-        SmoothingWorker(Mat filter, bool show): filter(filter), show(show) {}
+        SmoothingWorker(Mat filter, bool show, bool times): filter(filter), show(show), times(times) {}
 
         Mat * svc(Mat * m) {
             
             if (m != EOS) {
-                Smoother s(*m, this->filter, this->show);
+                Smoother s(*m, this->filter, this->show, this->times);
                 *m = s.smoothing();
                 return(m);
             }
@@ -72,7 +77,8 @@ class SmoothingWorker: public ff_node_t<Mat> {
 
 class Comparing: public ff_minode_t<Mat> {
     private: 
-        bool show;
+        bool show = false;
+        bool times = false;
         Mat background;
         float threshold;
         float percent;
@@ -82,13 +88,13 @@ class Comparing: public ff_minode_t<Mat> {
         bool has_finished = false;
 
     public:
-        Comparing(Mat background, int cw, float percent, float threshold, bool show): background(background), cw(cw), percent(percent), threshold(threshold), show(show) {}
+        Comparing(Mat background, int cw, float percent, float threshold, bool show, bool times): 
+            background(background), cw(cw), percent(percent), threshold(threshold), show(show), times(times) {}
 
         Mat * svc(Mat * m) {
             if (m != EOS) {
-                Comparer c(this->background, *m,this->cw, this->threshold, this->show);
+                Comparer c(this->background, *m,this->cw, this->threshold, this->show, this->times);
                 float diff = c.different_pixels();
-                cout << diff << " " << this->percent << endl;
                 if (diff > this->percent) (this->different_frames)++;
                 delete m;
             }
@@ -98,7 +104,7 @@ class Comparing: public ff_minode_t<Mat> {
         }
 
         void svc_end() {
-            cout << "Number of frames with movement detected: " << different_frames << endl;
+            cout << "Number of frames with movement detected: " << different_frames << " on a total of " << frame_number << " frames" << endl;
             this -> has_finished = true;
         }
 

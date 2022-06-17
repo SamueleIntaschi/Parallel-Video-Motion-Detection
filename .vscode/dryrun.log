@@ -1,0 +1,5 @@
+make.exe --dry-run --keep-going --print-directory
+make: Entering directory 'c:/Users/sam18/Documents/Parallel and Distributed Systems/Parallel-Video-Motion-Detection'
+make: 'ff' is up to date.
+make: Leaving directory 'c:/Users/sam18/Documents/Parallel and Distributed Systems/Parallel-Video-Motion-Detection'
+ 

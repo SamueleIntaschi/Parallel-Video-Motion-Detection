@@ -19,14 +19,16 @@ class Comparer {
         vector<pair<int,int>> chunks;
         bool show = false;
         float threshold;
+        bool times = false;
     
     public:
 
-        Comparer(Mat b, Mat f, int nw, float threshold, bool show) {
+        Comparer(Mat b, Mat f, int nw, float threshold, bool show, bool times) {
             this -> background = b;
             this -> frame = f;
             this -> nw = nw;
             this -> show = show;
+            this -> times = times;
             this -> threshold = threshold;
             int chunk_rows = (this->frame).rows/nw;
             for (int i=0; i<nw; i++) {
@@ -62,11 +64,12 @@ class Comparer {
             for (int i=0; i<(this->nw); i++) {
                 tids[i].join();
             }
-            float diff_pixels_fraction = (float) different_pixels/(this->frame).total();            
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::high_resolution_clock::now() - start;
-            auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
-            cout << "Times passed to compare frame with background: " << usec << " usec" << endl;
+            float diff_pixels_fraction = (float) different_pixels/(this->frame).total();
+            if (times) {
+                auto duration = std::chrono::high_resolution_clock::now() - start;
+                auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+                cout << "Times passed to compare frame with background: " << usec << " usec" << endl;
+            }
             if (show) {
                 imshow("Background Subtraction", res);
                 waitKey(25);

@@ -9,29 +9,6 @@ using namespace cv;
 
 // compile with (maybe some flags are missing): g++ program.cpp -o program `pkg-config --cflags opencv4` `pkg-config --libs opencv4`
 
-int evaluate_different_pixels(Mat m, Mat t) {
-    int cnt = 0;
-    float * pt = (float *) t.data;
-    float * pm = (float *) m.data;
-    for(int i=0; i<t.rows; i++) {
-        for (int j=0; j<t.cols; j++) {
-            if (pm[i * t.cols + j] > pt[i * t.cols + j]) cnt++;
-        }
-    }
-    return cnt;
-}
-
-int non_zero_pixels(Mat a) {
-    int cnt = 0;
-    float * p = (float *) a.data;
-    for(int i=0; i<a.rows; i++) {
-        for (int j=0; j<a.cols; j++) {
-            if (p[i * a.cols + j] > 0) cnt++;
-        }
-    }
-    return cnt;
-}
-
 Mat pixel_mul(Mat a, Mat b) {
     Mat res = Mat(a.rows, a.cols, CV_32F);
     float * pa = (float *) a.data;
@@ -58,10 +35,7 @@ float smoothing_px(Mat sub, Mat h1) {
     return res;
 }
 
-
-
-Mat smoothing(Mat m, Mat filter, bool show) {
-    cout << "Smoothing" << endl;
+Mat smoothing(Mat m, Mat filter, bool show, bool times) {
     float * gp = (float *) m.data;
     auto start = std::chrono::high_resolution_clock::now();
     for(int i=0; i<m.rows; i++) {
@@ -74,10 +48,11 @@ Mat smoothing(Mat m, Mat filter, bool show) {
             }
         }
     }
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::high_resolution_clock::now() - start;
-    auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
-    cout << "Times passed in seconds for smoothing: " << usec << endl;
+    if (times) {
+        auto duration = std::chrono::high_resolution_clock::now() - start;
+        auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+        cout << "Times passed for smoothing: " << usec << " usec" << endl;
+    }
     if (show) {
         imshow("Smoothing", m);
         waitKey(25);
@@ -85,9 +60,7 @@ Mat smoothing(Mat m, Mat filter, bool show) {
     return m;
 }
 
-Mat greyscale_conversion(Mat frame, bool show) {
-    //TODO there is a segmentation fault here
-    cout << "Conversion" << endl;
+Mat greyscale_conversion(Mat frame, bool show, bool times) {
     Mat gr = Mat(frame.rows, frame.cols, CV_32F);
     float * p = (float *) frame.data;
     float r, g, b;
@@ -99,13 +72,14 @@ Mat greyscale_conversion(Mat frame, bool show) {
             r = (float) p[i * frame.cols * channels + j * channels];
             g = (float) p[i * frame.cols * channels + j * channels + 1];
             b = (float) p[i * frame.cols * channels + j * channels + 2];
-            gp[i* frame.cols * channels + j * channels] = (float) (r + g + b) / channels;
+            gp[i* frame.cols + j ] = (float) (r + g + b) / channels;
         }
     }
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::high_resolution_clock::now() - start;
-    auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
-    cout << "Times passed in seconds to convert to greyscale: " << usec << endl;
+    if (times) {
+        auto duration = std::chrono::high_resolution_clock::now() - start;
+        auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+        cout << "Times passed to convert to greyscale: " << usec << " usec" << endl;
+    }
     if (show) {
         imshow("Frame", gr);
         waitKey(25);
@@ -113,24 +87,32 @@ Mat greyscale_conversion(Mat frame, bool show) {
     return gr;
 }
 
-int different_pixels(Mat a, Mat b, bool show) {
-    cout << "Comapring" << endl;
+float different_pixels(Mat a, Mat b, float threshold, bool show, bool times) {
     int cnt = 0;
     Mat res = Mat(a.rows, a.cols, CV_32F);
     float * pa = (float *) a.data;
     float * pb = (float *) b.data;
     float * pres = (float *) res.data;
+    auto start = std::chrono::high_resolution_clock::now();
     for(int i=0; i<a.rows; i++) {
         for (int j=0; j<a.cols; j++) {
             pres[i * a.cols + j] = abs(pb[i * a.cols + j] - pa[i * a.cols + j]);
-            if (pres[i * a.cols + j] > 0) cnt++;
+            if (pres[i * a.cols + j] > threshold) cnt++;
         }
+    }
+
+    if (times) {
+        auto duration = std::chrono::high_resolution_clock::now() - start;
+        auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+        cout << "Times passed to compare frame with background: " << usec << " usec" << endl;
     }
     if (show) {
         imshow("Background subtraction", res);
         waitKey(25);
     }
-    return cnt;
+
+    float diff_fraction = (float) cnt / a.total();
+    return diff_fraction;
 }
 
 // Sequential pattern
@@ -140,10 +122,11 @@ int main(int argc, char * argv[]) {
         return 0;
     }
     bool show = false;
-    if (argc == 5) {
-        if (strcmp(argv[4], "show") == 0) show = true;
+    bool times = false;
+    if (argc == 4) {
+        if (strcmp(argv[3], "show") == 0) show = true;
+        else if (strcmp(argv[3], "times") == 0) times = true;
     }
-
     // Initialization
     string filename = argv[1];
     VideoCapture cap(filename);
@@ -173,10 +156,10 @@ int main(int argc, char * argv[]) {
         frame.convertTo(frame, CV_32F, 1.0/255.0);
 
         // Greyscale conversion
-        frame = greyscale_conversion(frame, show);
+        frame = greyscale_conversion(frame, show, times);
         
         // Smoothing
-        frame = smoothing(frame, h1, show);
+        frame = smoothing(frame, h1, show, times);
 
         // Movement detection
         if (frame_number == 0) { // Case first frame taken as background
@@ -195,25 +178,17 @@ int main(int argc, char * argv[]) {
             cout << "Background average intensity: " << avg_intensity << endl;
         }
         else { // Case movement detection
-            int diff_pixels = 0;
-            auto start = std::chrono::high_resolution_clock::now();
-            diff_pixels = different_pixels(frame, background, show);
-            float different_pixels_fraction = (float)diff_pixels/frame.total();
-            cout << different_pixels_fraction << endl;
-            if (different_pixels_fraction > threshold) different_frames++;
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::high_resolution_clock::now() - start;
-            auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
-            cout << "Times passed in seconds to compare frame with background: " << usec << endl;
+            float different_pixels_fraction = different_pixels(frame, background, threshold, show, times);
+            if (different_pixels_fraction > percent) different_frames++;
             cout << "Frame number " << frame_number << " -> number of frames with movement detected until now: " << different_frames << endl;
         }
         frame_number++;
     }
-    cout << "Number of frames with movement detected: " << different_frames << endl;
     cap.release();
-    auto complessive_time_end = std::chrono::high_resolution_clock::now();
     auto complessive_duration = std::chrono::high_resolution_clock::now() - complessive_time_start;
     auto complessive_usec = std::chrono::duration_cast<std::chrono::microseconds>(complessive_duration).count();
+
+    cout << "Number of frames with movement detected: " << different_frames << endl;
     cout << "Total time passed: " << complessive_usec << endl;
 
     ofstream file;

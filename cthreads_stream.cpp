@@ -8,12 +8,13 @@
 #include <mutex>
 #include <vector>
 #include <ctime>
-#include "src/cthreads/thread_pool.hpp"
-#include "src/cthreads/greyscale_converter.hpp"
+#include "src/cthreads_stream/thread_pool_stream.hpp"
 
 
 using namespace std;
 using namespace cv;
+
+
 
 int main(int argc, char * argv[]) {
     if (argc == 1) {
@@ -65,10 +66,9 @@ int main(int argc, char * argv[]) {
     float threshold = (float) avg_intensity / 3;
     cout << "Frames resolution: " << background.rows << " x " << background.cols << endl;
     cout << "Background average intensity: " << avg_intensity << endl;
-    deque<function<float()>> results;
 
-    ThreadPool sm_pool(h1, sw, background, cw, threshold, show, times);
-    sm_pool.start_pool();
+    ThreadPool pool(h1, sw, background, cw, threshold, percent, show, times);
+    pool.start_pool();
 
     while (true) {
 
@@ -76,30 +76,14 @@ int main(int argc, char * argv[]) {
         cap >> frame;
         if (frame.empty()) break;
         frame.convertTo(frame, CV_32F, 1.0/255.0);
-
-        GreyscaleConverter converter(frame, cw, show, times);
-        frame = converter.convert_to_greyscale();
-
-        sm_pool.submit_task(frame);
+        
+        pool.submit_conversion_task(frame);
 
         frame_number++;
 
     }
 
-    int res_number = 0;
-    float res = 0;
-    while (res_number <= frame_number) {
-        res = (sm_pool.get_result())();
-        if (res == -1) {
-            break;
-        }
-        if (res > percent) different_frames++;
-        res_number++;
-        cout << "Frames with movement detected until now: " << different_frames << " over " << res_number << " analyzed on a total of " << frame_number << endl;
-        if (res_number == frame_number) break;
-    }
-
-    sm_pool.stop_pool();
+    different_frames = pool.get_final_result();
 
     cout << "Number of frames with movement detected: " << different_frames << " on a total of " << frame_number << " frames" << endl;
     auto complessive_time_end = std::chrono::high_resolution_clock::now();
@@ -112,7 +96,7 @@ int main(int argc, char * argv[]) {
     char* date = (char *) ctime(&now);
     date[strlen(date) - 1] = '\0';
     file.open("results.txt", std::ios_base::app);
-    file << date << " - " << filename << ",native," << k << "," << nw << "," << show << "," << complessive_usec << "," << different_frames << endl;
+    file << date << " - " << filename << ",ntstream," << k << "," << nw << "," << show << "," << complessive_usec << "," << different_frames << endl;
     file.close();
     
     return 0;

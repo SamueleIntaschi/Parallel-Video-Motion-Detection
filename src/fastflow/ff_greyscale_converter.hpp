@@ -20,13 +20,15 @@ class GreyscaleConverter {
         Mat m;
         int nw;
         bool show = false;
+        bool times = false;
 
     public:
 
-        GreyscaleConverter(Mat m, int nw, bool show) {
+        GreyscaleConverter(Mat m, int nw, bool show, bool times) {
             this -> m = m;
             this -> nw = nw;
             this -> show = show;
+            this -> times = times;
         }
 
         float get_avg_intensity(Mat bn) {
@@ -48,13 +50,10 @@ class GreyscaleConverter {
             ParallelForReduce<float> pf(this->nw, true);
             pf.parallel_reduce(sum, 0, 0, bn.rows, 1, f, reduce, nw);
             float avg = (float) sum / bn.total();
-            cout << avg << " " << sum << " " << bn.total() << " " << nans<<  endl;
             return avg;
         }
 
         Mat convert_to_greyscale() {
-            auto start = std::chrono::high_resolution_clock::now();
-
             //Mat * gr = new Mat((this -> m).rows, (this -> m).cols, CV_32F);
             Mat gr = Mat((this -> m).rows, (this -> m).cols, CV_32F);
             int channels = (this -> m).channels();
@@ -72,14 +71,14 @@ class GreyscaleConverter {
                     pl[i * gr.cols + j] = (float) (r + g + b) / channels;
                 }
             };
-            
+            auto start = std::chrono::high_resolution_clock::now();
             ParallelFor pf(nw);
             pf.parallel_for(0,(this->m).rows, 1, 0, greyscale_conversion, nw);
-
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::high_resolution_clock::now() - start;
-            auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
-            cout << "Times passed to convert to greyscale: " << usec << " usec" << endl;
+            if (times) {
+                auto duration = std::chrono::high_resolution_clock::now() - start;
+                auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+                cout << "Times passed to convert to greyscale: " << usec << " usec" << endl;
+            }
             if (show) {
                 imshow("Frame", gr);
                 waitKey(25);

@@ -6,75 +6,34 @@
 #include <queue>
 #include <mutex>
 #include <vector>
-#include <atomic>
+#include "../common_classes/smoother.hpp"
 #include <ff/ff.hpp>
 #include <ff/node.hpp>
+#include <ff/farm.hpp>
+#include <ff/pipeline.hpp>
+#include <ff/map.hpp>
 
 using namespace ff;
 using namespace std;
 using namespace cv;
 
-class Smoother: ff_node_t<Mat> {
+class SmoothingWorker: public ff_node_t<Mat> {
     private:
-        Mat m;
-        Mat filter;
         bool show = false;
-
-        Mat pixel_mul(Mat a, Mat b) {
-            Mat res = Mat(a.rows, a.cols, CV_32F);
-            float * pa = (float *) a.data;
-            float * pb = (float *) b.data;
-            float * pres = (float *) res.data;
-            for(int i=0; i<a.rows; i++) {
-                for (int j=0; j<a.cols; j++) {
-                    pres[i * a.cols + j] = pa[i * a.cols + j] * pb[i * a.cols + j];
-                }
-            }
-            return res;
-        }
-
-        float smoothing_px(Mat sub, Mat h1) {
-            //Mat mul = sub.mul(h1);
-            Mat mul = pixel_mul(sub, h1);
-            float * p = (float *) mul.data;
-            float res = 0;
-            for(int i=0; i<mul.rows; i++) {
-                for (int j=0; j<mul.cols; j++) {
-                    res += p[i * mul.cols + j];
-                }
-            }
-            return res;
-        }
+        bool times = false;
+        Mat filter;
 
     public:
+        SmoothingWorker(Mat filter, bool show, bool times): filter(filter), show(show), times(times) {}
 
-        Smoother(Mat m, Mat filter, bool show) {
-            this -> m = m;
-            this -> filter = filter;
-            this -> show = show;
-        }
-
-        Mat svc() {
-            auto start = std::chrono::high_resolution_clock::now();
-            float * sp = (float *) (this -> m).data;
-            for(int i=0; i<(this->m).rows; i++) {
-                for (int j=0; j<(this->m).cols; j++) { 
-                    cv::Rect r(j-1, i-1, 3, 3);
-                    if (r.x >= 0 && r.y >= 0 && r.x + r.width <= (this->m).cols && r.y + r.height <= (this->m).rows) {
-                        //Mat submatrix = (this->m)(r);//.clone();
-                        Mat submatrix = (this->m)(r).clone();
-                        //*sp++ = smoothing_px(submatrix, h1);
-                        sp[i * m.cols + j] = smoothing_px(submatrix, (this->filter));
-                    }
-                }
+        Mat * svc(Mat * m) {
+            
+            if (m != EOS) {
+                Smoother s(*m, this->filter, this->show, this->times);
+                *m = s.smoothing();
+                return(m);
             }
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::high_resolution_clock::now() - start;
-            auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
-            if (show) {
-                imshow("Smoothing", (this -> m));
-                waitKey(25);
-            }
-            return (this -> m);
+            
+            return m;
         }
 };

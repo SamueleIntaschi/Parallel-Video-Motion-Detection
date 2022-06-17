@@ -7,7 +7,7 @@
 #include <mutex>
 #include <vector>
 #include <condition_variable>
-#include "smoother.hpp"
+#include "../common_classes/smoother.hpp"
 #include "comparer.hpp"
 
 using namespace std;
@@ -29,12 +29,12 @@ class ThreadPool {
         Mat background;
         bool stop = false;
         bool show = false;
+        bool times = false;
         float threshold;
 
         void submit_result(Mat m) {
-            //TODO da rivedere
             auto f = [this] (Mat m) {
-                Comparer c(this->background, m, this->cw, this->threshold, this->show);
+                Comparer c(this->background, m, this->cw, this->threshold, this->show, this->times);
                 return c.different_pixels();
             };
             auto fb = (bind(f, m));
@@ -46,20 +46,19 @@ class ThreadPool {
         }
 
     public:
-        ThreadPool(Mat filter, int sw, Mat b, int cw, float threshold, bool show) {
-            //this -> tasks = tasks;
-            this -> results = results;
+        ThreadPool(Mat filter, int sw, Mat b, int cw, float threshold, bool show, bool times) {
             this -> cw = cw;
             this -> sw = sw;
             this -> filter = filter;
             this -> background = b;
             this -> show = show;
+            this -> times = times;
             this -> threshold = threshold;
         }
 
         void submit_task(Mat m) {
             auto f = [this] (Mat m, Mat filter) {
-                Smoother s(m, filter, this->show);
+                Smoother s(m, filter, this->show, this->times);
                 return s.smoothing();
             };
             auto fb = bind(f, m, this->filter);
@@ -85,11 +84,8 @@ class ThreadPool {
                             return;
                         } 
                     }
-                    //cout << "Thread " << i << " works for smoothing" << endl;
                     Mat s = t();
                     this -> submit_result(s);
-                    //imshow("Smoothing", s);
-                    //waitKey(25);
                 }
             };
             for (int i=0; i<(this->sw); i++) {
