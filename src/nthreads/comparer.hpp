@@ -23,17 +23,12 @@ class Comparer {
     
     public:
 
-        Comparer(Mat b, Mat f, int nw, float threshold, bool show, bool times) {
-            this -> background = b;
-            this -> frame = f;
-            this -> nw = nw;
-            this -> show = show;
-            this -> times = times;
-            this -> threshold = threshold;
+        Comparer(Mat background, Mat frame, int nw, float threshold, bool show, bool times):
+            background(background), frame(frame), nw(nw), threshold(threshold), show(show), times(times) {
             int chunk_rows = (this->frame).rows/nw;
             for (int i=0; i<nw; i++) {
                 auto start = i * chunk_rows;
-                auto stop = (i==(nw-1) ? f.rows : start + chunk_rows);
+                auto stop = (i==(nw-1) ? frame.rows : start + chunk_rows);
                 chunks.push_back(make_pair(start, stop));
             }
         }

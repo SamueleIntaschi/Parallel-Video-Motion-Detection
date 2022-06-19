@@ -8,7 +8,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Fri Jun 17 17:04:04 2022
+# Make data base, printed on Mon Jun 20 01:23:12 2022
 
 # Variables
 
@@ -25,7 +25,7 @@ USERPROFILE = C:\Users\sam18
 # environment
 LOCALAPPDATA = C:\Users\sam18\AppData\Local
 # environment
-VSCODE_IPC_HOOK_EXTHOST = \\.\pipe\vscode-ipc-d386f543-2ab1-4b14-9703-eaf1c0861015-sock
+VSCODE_IPC_HOOK_EXTHOST = \\.\pipe\vscode-ipc-9116b9c0-dec3-48a0-a10a-ba732de4f509-sock
 # environment
 VSCODE_CWD = C:\Users\sam18\AppData\Local\Programs\Microsoft VS Code
 # environment
@@ -43,7 +43,7 @@ GOPATH = C:\Users\sam18\go
 # automatic
 @D = $(patsubst %/,%,$(patsubst %\,%,$(dir $@)))
 # environment
-CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_14128_GXGLHHWMYZMUUCLI
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_10236_UZDMBDUDBETRYJBK
 # environment
 FPS_BROWSER_USER_PROFILE_STRING = Default
 # environment
@@ -99,7 +99,7 @@ MAKEFILE_LIST := Makefile
 # environment
 VSCODE_VERBOSE_LOGGING = true
 # environment
-VSCODE_PID = 14128
+VSCODE_PID = 10236
 # automatic
 ?D = $(patsubst %/,%,$(patsubst %\,%,$(dir $?)))
 # automatic
@@ -169,7 +169,7 @@ OS = Windows_NT
 # environment
 GYP_MSVS_VERSION = 2015
 # makefile (from 'Makefile', line 5)
-EXE = native ff seq ntstream
+EXE = ff seq nt
 # makefile
 .DEFAULT_GOAL := ff
 # default
@@ -231,9 +231,9 @@ PROCESSOR_IDENTIFIER = AMD64 Family 23 Model 96 Stepping 1, AuthenticAMD
 
 # Directories
 
-# . (key c:/Users/sam18/Documents/Parallel and Distributed Systems/Parallel-Video-Motion-Detection, mtime 1655478194): 15 files, no impossibilities.
+# . (key c:/Users/sam18/Documents/Parallel and Distributed Systems/Parallel-Video-Motion-Detection, mtime 1655680912): 13 files, no impossibilities.
 
-# 15 files, no impossibilities in 1 directories.
+# 13 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -253,6 +253,13 @@ sequential.cpp:
 #  Modification time never checked.
 #  File has not been updated.
 
+fftrace: ff.cpp
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 11):
+	$(CXX) -DTRACE_FASTFLOW -o ff ff.cpp $(LDFLAGS)
+
 ff: ff.cpp
 #  Implicit rule search has not been done.
 #  Modification time never checked.
@@ -263,7 +270,7 @@ ff: ff.cpp
 # Not a target:
 Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2022-06-17 17:04:02
+#  Last modified 2022-06-19 20:11:59
 #  File has been updated.
 #  Successfully updated.
 
@@ -271,22 +278,15 @@ clean:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from 'Makefile', line 27):
+#  recipe to execute (from 'Makefile', line 30):
 	rm $(EXE)
 
 ffnomap: ff.cpp
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from 'Makefile', line 14):
+#  recipe to execute (from 'Makefile', line 17):
 	$(CXX) -DNO_DEFAULT_MAPPING=true -o ff ff.cpp $(LDFLAGS)
-
-ntstream: cthreads.cpp
-#  Implicit rule search has not been done.
-#  Modification time never checked.
-#  File has not been updated.
-#  recipe to execute (from 'Makefile', line 20):
-	$(CXX) -o ntstream cthreads_stream.cpp $(LDFLAGS)
 
 # Not a target:
 .DEFAULT:
@@ -311,38 +311,50 @@ seq: sequential.cpp
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from 'Makefile', line 24):
+#  recipe to execute (from 'Makefile', line 27):
 	$(CXX) -o seq sequential.cpp $(LDFLAGS)
 
-cthreads: 
- cthreads.cpp
+cthreads: cthreads.cpp
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from 'Makefile', line 17):
+#  recipe to execute (from 'Makefile', line 20):
 	$(CXX) -o native cthreads.cpp $(LDFLAGS)
+
+# Not a target:
+nthreads.cpp:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+nt: nthreads.cpp
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 23):
+	$(CXX) -o nt nthreads.cpp $(LDFLAGS)
 
 ffblock: ff.cpp
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from 'Makefile', line 11):
+#  recipe to execute (from 'Makefile', line 14):
 	$(CXX) -DBLOCKING_MODE=true -o ff ff.cpp $(LDFLAGS)
 
 # files hash-table stats:
-# Load=14/1024=1%, Rehash=0, Collisions=0/30=0%
+# Load=16/1024=2%, Rehash=0, Collisions=0/33=0%
 # VPATH Search Paths
 
 # No 'vpath' search paths.
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 23 / storage = 186 B / avg = 8 B
-# current buf: size = 8174 B / used = 186 B / count = 23 / avg = 8 B
+# strcache buffers: 1 (0) / strings = 25 / storage = 192 B / avg = 7 B
+# current buf: size = 8174 B / used = 192 B / count = 25 / avg = 7 B
 
-# strcache performance: lookups = 42 / hit rate = 45%
+# strcache performance: lookups = 43 / hit rate = 41%
 # hash-table stats:
-# Load=23/8192=0%, Rehash=0, Collisions=0/42=0%
-# Finished Make data base on Fri Jun 17 17:04:04 2022
+# Load=25/8192=0%, Rehash=0, Collisions=2/43=5%
+# Finished Make data base on Mon Jun 20 01:23:12 2022
 
  

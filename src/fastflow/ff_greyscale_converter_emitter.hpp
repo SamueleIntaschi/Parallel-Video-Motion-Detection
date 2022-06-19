@@ -12,7 +12,7 @@
 #include <ff/pipeline.hpp>
 #include <ff/map.hpp>
 
-class Converter: public ff_Map<Mat> {
+class ConverterEmitter: public ff_Map<Mat> {
 
     private:
         int cw;
@@ -24,7 +24,7 @@ class Converter: public ff_Map<Mat> {
 
     public:
 
-        Converter(VideoCapture cap, int cw, bool show, bool times): cap(cap), cw(cw), show(show), times(times) {}
+        ConverterEmitter(VideoCapture cap, int cw, bool show, bool times): cap(cap), cw(cw), show(show), times(times) {}
 
         Mat * svc (Mat *) {
 
@@ -55,6 +55,7 @@ class Converter: public ff_Map<Mat> {
                 };
                 auto start = std::chrono::high_resolution_clock::now();
                 ff_Map::parallel_for(0,frame.rows,1,0,greyscale_conversion,cw);
+                //ff_Map.ffStats(cout);
                 if (times) {
                     auto duration = std::chrono::high_resolution_clock::now() - start;
                     auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();

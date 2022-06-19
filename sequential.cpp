@@ -1,8 +1,8 @@
 #include <iostream>
-#include <fstream>
 #include "opencv2/opencv.hpp"
 #include <thread>
-#include <chrono> 
+#include <chrono>
+#include "src/utils/file_writer.hpp"
 
 using namespace std;
 using namespace cv;
@@ -180,7 +180,7 @@ int main(int argc, char * argv[]) {
         else { // Case movement detection
             float different_pixels_fraction = different_pixels(frame, background, threshold, show, times);
             if (different_pixels_fraction > percent) different_frames++;
-            cout << "Frame number " << frame_number << " -> number of frames with movement detected until now: " << different_frames << endl;
+            cout << "Frames with movement detected until now: " << different_frames << " over " << frame_number << " analyzed" << endl;
         }
         frame_number++;
     }
@@ -190,14 +190,10 @@ int main(int argc, char * argv[]) {
 
     cout << "Number of frames with movement detected: " << different_frames << endl;
     cout << "Total time passed: " << complessive_usec << endl;
-
-    ofstream file;
-    time_t now = time(0);
-    char* date = (char *) ctime(&now);
-    date[strlen(date) - 1] = '\0';
-    file.open("results.txt", std::ios_base::app);
-    file << date << " - " << filename << ",sequential," << k << "," << show << "," << complessive_usec << "," << different_frames << endl;
-    file.close();
+    
+    FileWriter fw("results.txt");
+    string time = to_string(complessive_usec);
+    fw.print_results(filename,"sequential",k,-1,show,time,different_frames);
 
     return(0);
 }

@@ -24,12 +24,8 @@ class GreyscaleConverter {
 
     public:
 
-        GreyscaleConverter(Mat m, int nw, bool show, bool times) {
-            this -> m = m;
-            this -> nw = nw;
-            this -> show = show;
-            this -> times = times;
-        }
+        GreyscaleConverter(Mat m, int nw, bool show, bool times):
+            m(m), nw(nw), show(show), times(times) {}
 
         float get_avg_intensity(Mat bn) {
             int channels = bn.channels();
@@ -72,7 +68,7 @@ class GreyscaleConverter {
                 }
             };
             auto start = std::chrono::high_resolution_clock::now();
-            ParallelFor pf(nw);
+            ParallelFor pf(nw, true);
             pf.parallel_for(0,(this->m).rows, 1, 0, greyscale_conversion, nw);
             if (times) {
                 auto duration = std::chrono::high_resolution_clock::now() - start;

@@ -5,6 +5,7 @@
         "chrono": "cpp",
         "thread": "cpp",
         "iostream": "cpp",
-        "memory": "cpp"
+        "memory": "cpp",
+        "iosfwd": "cpp"
     }
 }

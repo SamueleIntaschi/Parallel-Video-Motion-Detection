@@ -25,14 +25,8 @@ class Comparer {
     
     public:
     
-        Comparer(Mat b, Mat f, int nw, float threshold, bool show, bool times) {
-            this -> background = b;
-            this -> frame = f;
-            this -> nw = nw;
-            this -> show = show;
-            this -> times = times;
-            this -> threshold = threshold;
-        }
+        Comparer(Mat background, Mat frame, int nw, float threshold, bool show, bool times):
+            background(background), frame(frame), nw(nw), threshold(threshold), show(show), times(times) {}
 
         float different_pixels() {
             Mat res = Mat((this->frame).rows, (this->frame).cols, CV_32F);
@@ -50,8 +44,9 @@ class Comparer {
                 diff_pixels += e;
             };
             auto start = std::chrono::high_resolution_clock::now();
-            ParallelForReduce<int> pf(this->nw);
+            ParallelForReduce<int> pf(this->nw, true);
             pf.parallel_reduce(different_pixels, 0, 0, (this->frame).rows, 1, comparing, reduce, this->nw);
+            //pf.ffStats(cout);
             float diff_pixels_fraction = (float) different_pixels/(this->frame).total();
             if (times) {
                 auto duration = std::chrono::high_resolution_clock::now() - start;
@@ -63,5 +58,44 @@ class Comparer {
                 waitKey(25);
             }
             return diff_pixels_fraction;
+        }
+};
+
+class ComparerCollector: public ff_minode_t<Mat> {
+    private: 
+        bool show = false;
+        bool times = false;
+        Mat background;
+        float threshold;
+        float percent;
+        int cw;
+        int different_frames = 0;
+        int frame_number = 0;
+        bool has_finished = false;
+
+    public:
+        ComparerCollector(Mat background, int cw, float percent, float threshold, bool show, bool times): 
+            background(background), cw(cw), percent(percent), threshold(threshold), show(show), times(times) {}
+
+        Mat * svc(Mat * m) {
+            if (m != EOS) {
+                Comparer c(this->background, *m,this->cw, this->threshold, this->show, this->times);
+                float diff = c.different_pixels();
+                if (diff > this->percent) (this->different_frames)++;
+                delete m;
+            }
+            (this -> frame_number)++;
+            cout << "Frames with movement detected until now: " << different_frames << " over " << frame_number << " analyzed" << endl;
+            return GO_ON;
+        }
+
+        void svc_end() {
+            cout << "Number of frames with movement detected: " << different_frames << " on a total of " << frame_number << " frames" << endl;
+            this -> has_finished = true;
+        }
+
+        int get_different_frames_number() {
+            if (this -> has_finished) return this->different_frames;
+            else return -1;
         }
 };

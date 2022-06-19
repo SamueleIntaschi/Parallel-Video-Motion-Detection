@@ -23,11 +23,7 @@ class GreyscaleConverter {
 
     public:
 
-        GreyscaleConverter(Mat m, int nw, bool show, bool times) {
-            this -> m = m;
-            this -> nw = nw;
-            this -> show = show;
-            this -> times = times;
+        GreyscaleConverter(Mat m, int nw, bool show, bool times): m(m), nw(nw), show(show), times(times) {
             this -> chunk_rows = m.rows / nw;            
             for (int i=0; i<nw; i++) {
                 auto start = i*chunk_rows;

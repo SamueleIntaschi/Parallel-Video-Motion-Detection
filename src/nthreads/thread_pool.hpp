@@ -8,9 +8,9 @@
 #include <vector>
 #include <condition_variable>
 #include <future>
-#include "../cthreads/comparer.hpp"
-#include "../common_classes/smoother.hpp"
-#include "../cthreads/greyscale_converter.hpp"
+#include "../nthreads/comparer.hpp"
+#include "../utils/smoother.hpp"
+#include "../nthreads/greyscale_converter.hpp"
 
 using namespace std;
 using namespace cv;
@@ -44,19 +44,13 @@ class ThreadPool {
         
 
     public:
-        ThreadPool(Mat filter, int sw, Mat b, int cw, float threshold, float percent, bool show, bool times) {
-            this -> cw = cw;
-            this -> sw = sw;
-            this -> filter = filter;
-            this -> background = b;
-            this -> show = show;
-            this -> times = times;
-            this -> threshold = threshold;
-            this -> res_number = 0;
-            this -> frame_number = 0;
-            this -> different_frames = 0;
-            this -> percent = percent;
-        }
+        ThreadPool(Mat filter, int sw, Mat background, int cw, float threshold, float percent, bool show, bool times):
+            cw(cw), sw(sw), filter(filter), background(background), threshold(threshold), percent(percent), 
+            show(show), times(times) {
+                this -> frame_number = 0;
+                this -> res_number = 0;
+                this -> different_frames = 0;
+            }
 
         void submit_conversion_task(Mat m) {
             auto f = [this] (Mat m) {

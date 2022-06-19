@@ -6,7 +6,7 @@
 #include <queue>
 #include <mutex>
 #include <vector>
-#include "../common_classes/smoother.hpp"
+#include "../utils/smoother.hpp"
 #include <ff/ff.hpp>
 #include <ff/node.hpp>
 #include <ff/farm.hpp>

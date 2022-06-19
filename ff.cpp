@@ -1,5 +1,4 @@
 #include <iostream>
-#include <fstream>
 #include "opencv2/opencv.hpp"
 #include <thread>
 #include <chrono> 
@@ -7,16 +6,18 @@
 #include <queue>
 #include <mutex>
 #include <vector>
-#include "src/fastflow/ff_map_comparer.hpp"
-#include "src/fastflow/ff_map_greyscale_converter.hpp"
-#include "src/fastflow/ff_smoother.hpp"
+#include "src/fastflow/ff_comparer_collector.hpp"
+#include "src/fastflow/ff_greyscale_converter_emitter.hpp"
+#include "src/fastflow/ff_smoother_worker.hpp"
 #include "src/fastflow/ff_greyscale_converter.hpp"
+#include "src/utils/file_writer.hpp"
 
 using namespace ff;
 using namespace std;
 using namespace cv;
 
 int main(int argc, char * argv[]) {
+
     if (argc == 1) {
         cout << "Usage is " << argv[0] << " filename accuracy nw" << endl;
     }
@@ -31,11 +32,14 @@ int main(int argc, char * argv[]) {
     string filename = argv[1];
     int k = atoi(argv[2]); // k for accuracy then
     int nw = atoi(argv[3]); // number of workers
-    int cw = nw/2;
-    int sw = nw - cw;
+    if (k < 4) {
+        cout << "Specify at least 4 threads" << endl;
+    }
+    int cw = nw/4;
+    int sw = nw - (2 * cw);
     if (cw == 0) cw = 1;
     if (sw == 0) sw = 1;
-    cout << "Thread use: " << cw/2 << " for conversion to greyscale, " << cw/2 <<  " for comparing, " << sw << " for smoothing" << endl;
+    cout << "Thread use: " << cw << " for conversion to greyscale, " << cw <<  " for comparing, " << sw << " for smoothing" << endl;
     // Start time measurement
     float percent = (float) k / 100;
     VideoCapture cap(filename); 
@@ -67,15 +71,18 @@ int main(int argc, char * argv[]) {
     cout << "Background average intensity: " << avg_intensity << endl;
     
     std::vector<std::unique_ptr<ff_node>> w;
-    Comparer * cmp = new Comparer(background, cw, percent, threshold, show, times);
-    Converter * cnv = new Converter(cap, cw, show, times);
+    ComparerCollector * cmp = new ComparerCollector(background, cw, percent, threshold, show, times);
+    ConverterEmitter * cnv = new ConverterEmitter(cap, cw, show, times);
     for(int i=0;i<sw;++i) w.push_back(make_unique<SmoothingWorker>(h1,show, times));
+
     ff_Farm<Mat> farm(std::move(w));
+    farm.remove_collector();
+     
     ff_Pipe<Mat> pipe(cnv, farm, cmp);
 
     OptLevel opt;
-    //opt.max_mapped_threads = ff_realNumCores();
-    //opt.no_default_mapping = true; // disable mapping if #threads > max_mapped_threads
+    opt.max_mapped_threads = ff_realNumCores();
+    opt.no_default_mapping = true; // disable mapping if #threads > max_mapped_threads
     opt.max_nb_threads = ff_realNumCores();
     opt.blocking_mode = true; // enable blocking mode if #threads > max_nb_threads
     optimize_static(pipe, opt);
@@ -84,18 +91,17 @@ int main(int argc, char * argv[]) {
 
     int different_frames = cmp->get_different_frames_number();
 
-    auto complessive_time_end = std::chrono::high_resolution_clock::now();
     auto complessive_duration = std::chrono::high_resolution_clock::now() - complessive_time_start;
     auto complessive_usec = std::chrono::duration_cast<std::chrono::microseconds>(complessive_duration).count();
+
     cout << "Total time passed: " << complessive_usec << endl;
 
-    ofstream file;
-    time_t now = time(0);
-    char* date = (char *) ctime(&now);
-    date[strlen(date) - 1] = '\0';
-    file.open("results.txt", std::ios_base::app);
-    file << date << " - " << filename << ",ff," << k << "," << nw << "," << show << "," << complessive_usec << "," << different_frames << endl;
-    file.close();
+    //pipe.ffStats(cout);
+
+    FileWriter fw("results.txt");
+    string time = to_string(complessive_usec);
+    fw.print_results(filename,"ff",k,nw,show,time,different_frames);
+
 
     return 0;
 };
