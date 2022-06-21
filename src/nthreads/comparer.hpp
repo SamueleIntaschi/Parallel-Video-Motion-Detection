@@ -11,11 +11,16 @@
 using namespace std;
 using namespace cv;
 
+/**
+ * @brief Class that performs background subtraction and computes the fraction of
+ *        different pixels over the total
+ * 
+ */
 class Comparer {
     private:
         Mat background;
         Mat frame;
-        int nw;
+        int nw; // Number of workers
         vector<pair<int,int>> chunks;
         bool show = false;
         float threshold;
@@ -26,6 +31,7 @@ class Comparer {
         Comparer(Mat background, Mat frame, int nw, float threshold, bool show, bool times):
             background(background), frame(frame), nw(nw), threshold(threshold), show(show), times(times) {
             int chunk_rows = (this->frame).rows/nw;
+            // Compute the range of rows each thread has to analyze        
             for (int i=0; i<nw; i++) {
                 auto start = i * chunk_rows;
                 auto stop = (i==(nw-1) ? frame.rows : start + chunk_rows);
@@ -33,9 +39,15 @@ class Comparer {
             }
         }
 
+        /**
+         * @brief Performs background subtraction
+         * 
+         * @return the fraction of different pixels between the background and the actual frame over the total
+         */
         float different_pixels() {
             auto start = std::chrono::high_resolution_clock::now();
             vector<thread> tids(nw);
+            // Global variable that each thread increments
             atomic<int> different_pixels;
             different_pixels = 0;
             Mat res = Mat((this->frame).rows, (this->frame).cols, CV_32F);
@@ -51,7 +63,6 @@ class Comparer {
                         if (pres[i * (this->frame).cols + j] > this->threshold) different_pixels++;
                     }
                 }
-
             };
             for (int i=0; i<(this->nw); i++) {
                 tids[i] = thread(comparing, i);

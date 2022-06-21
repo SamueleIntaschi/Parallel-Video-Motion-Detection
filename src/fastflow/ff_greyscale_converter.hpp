@@ -14,6 +14,11 @@ using namespace std;
 using namespace cv;
 using namespace ff;
 
+/**
+ * @brief Class used to convert a frame to greyscale using parallel_for, it is used
+ *        only for the background because in the pipe it is better to use a Map node
+ * 
+ */
 class GreyscaleConverter {
 
     private:
@@ -32,12 +37,9 @@ class GreyscaleConverter {
             if (channels > 1) return -1;
             float * p = (float *) bn.data;
             float sum = 0;
-            atomic<int> nans;
-            nans = 0;
             auto f = [&] (const int i, float &s) {
                 for (int j=0; j<bn.cols; j++) {
-                    s = s + p[i * bn.cols + j];
-                    if (isnan(p[i*bn.cols + j])) nans++;
+                    s = (float) s + p[i * bn.cols + j];
                 }
             }; 
             auto reduce = [] (float &s, float e) {
@@ -46,6 +48,7 @@ class GreyscaleConverter {
             ParallelForReduce<float> pf(this->nw, true);
             pf.parallel_reduce(sum, 0, 0, bn.rows, 1, f, reduce, nw);
             float avg = (float) sum / bn.total();
+            avg = round( avg * 100.0 ) / 100.0;
             return avg;
         }
 

@@ -11,9 +11,10 @@ elif [ "$1" = "-help" ]; then
 fi
     
 video=$1
-percent=$2
-nw=$3
-tries=$4
+nw=$2
+tries=$3
+
+mkdir results
 
 make ff
 make nt
@@ -22,16 +23,52 @@ make seq
 if [ -d $video ]; then
     for ((i=1; i<=$tries; i++)); do
         for file in $video/*; do
-            ./seq $file $percent  
-            ./nt $file $percent $nw
-            ./ff $file $percent $nw
+
+            v=$file
+            video_name=(${v//// })
+            o_file="results/"${video_name[1]} 
+            o_file=(${o_file//".mp4"/ })
+            o_file=$o_file".txt"
+            if [ $video = "Videos/people_low1.mp4" ]; then
+                percent=5
+            elif [ $video = "Videos/people_low2.mp4" ]; then
+                percent=13
+            elif [ $video = "Videos/people_low3.mp4" ]; then
+                percent=35
+            else
+                percent=20
+            fi
+
+            echo $o_file
+            
+            ./seq $file $percent -output_file $file
+            ./nt $file $percent $nw  -output_file $file
+            ./ff $file $percent $nw -output_file $file
+
         done
     done
 else
     for ((i=1; i<=$tries; i++)); do
-        ./seq $video $percent  
-        ./nt $video $percent $nw
-        ./ff $video $percent $nw
+
+        v=$video
+        video_name=(${v//// })
+        file="results/"${video_name[1]} 
+        file=(${file//".mp4"/ })
+        file=$file".txt"
+        if [ $video = "Videos/people_low1.mp4" ]; then
+            percent=5
+        elif [ $video = "Videos/people_low2.mp4" ]; then
+            percent=13
+        elif [ $video = "Videos/people_low3.mp4" ]; then
+            percent=35
+        else
+            percent=20
+        fi
+
+        ./seq $video $percent -output_file $file
+        ./nt $video $percent $nw -output_file $file
+        ./ff $video $percent $nw -output_file $file
+
     done
 fi
 exit 0

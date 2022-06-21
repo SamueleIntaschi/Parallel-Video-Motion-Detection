@@ -12,11 +12,17 @@
 #include <ff/pipeline.hpp>
 #include <ff/map.hpp>
 
+/**
+ * @brief Class that represents the emitter of the pipe, that reads frames from the source,
+ *        converts them in grayscale and send it to the next node of the pipe, that performs 
+ *        smoothing
+ * 
+ */
 class ConverterEmitter: public ff_Map<Mat> {
 
     private:
-        int cw;
-        string filename;
+        int cw; // number of workers for map
+        string filename; // name of the video to analyze
         int frame_number = 0;
         bool show = false;
         bool times = false;
@@ -26,6 +32,11 @@ class ConverterEmitter: public ff_Map<Mat> {
 
         ConverterEmitter(VideoCapture cap, int cw, bool show, bool times): cap(cap), cw(cw), show(show), times(times) {}
 
+        /**
+         * @brief Main function of the emitter node, it reads frames, converts to grayscale and submits to next node
+         * 
+         * @return EOS when the frames are finished
+         */
         Mat * svc (Mat *) {
 
             while (true) {
@@ -34,18 +45,18 @@ class ConverterEmitter: public ff_Map<Mat> {
                 this -> cap >> frame;
                 if (frame.empty()) break;
                 frame.convertTo(frame, CV_32F, 1.0/255.0);
-
                 Mat * m = new Mat(frame.rows, frame.cols, CV_32F);
-
                 Mat gr = Mat(frame.rows, frame.cols, CV_32F);
                 int channels = frame.channels();
                 float * pl = (float *) (gr).data;
                 float * pm = (float *) frame.data;
 
+                // Map function for rows
                 auto greyscale_conversion = [&gr, this, channels, pl, pm] (const long i) {
                     float r = 0;
                     float b = 0;
                     float g = 0;
+                    // For each pixel of the row compute the average value of the channels
                     for (int j=0; j<gr.cols; j++) {
                         r = (float) pm[i * gr.cols * channels + j * channels];
                         g = (float) pm[i * gr.cols * channels + j * channels + 1];
@@ -54,8 +65,8 @@ class ConverterEmitter: public ff_Map<Mat> {
                     }
                 };
                 auto start = std::chrono::high_resolution_clock::now();
+                // Compute the map parallel_for
                 ff_Map::parallel_for(0,frame.rows,1,0,greyscale_conversion,cw);
-                //ff_Map.ffStats(cout);
                 if (times) {
                     auto duration = std::chrono::high_resolution_clock::now() - start;
                     auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
@@ -65,11 +76,9 @@ class ConverterEmitter: public ff_Map<Mat> {
                     imshow("Frame", gr);
                     waitKey(25);
                 }
-
                 *m = gr;
                 ff_send_out(m);
                 frame_number++;
-
             }
             (this->cap).release();
             return EOS;

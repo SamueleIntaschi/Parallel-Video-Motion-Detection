@@ -11,20 +11,24 @@
 using namespace std;
 using namespace cv;
 
+/**
+ * @brief Class that performs greyscale conversion
+ * 
+ */
 class GreyscaleConverter {
 
     private:
         Mat m;
-        int nw;
-        vector<pair<int,int>> chunks;
-        int chunk_rows;
+        int nw; // number of workers
+        vector<pair<int,int>> chunks; // vector of pair <first_row, last_row> with the range of rows each thread has to analyse
         bool show = false;
         bool times = false;
 
     public:
 
         GreyscaleConverter(Mat m, int nw, bool show, bool times): m(m), nw(nw), show(show), times(times) {
-            this -> chunk_rows = m.rows / nw;            
+            int chunk_rows = m.rows / nw;    
+            // Compute the range of rows each thread has to analyze        
             for (int i=0; i<nw; i++) {
                 auto start = i*chunk_rows;
                 auto stop = (i==(nw-1) ? m.rows : start + chunk_rows);
@@ -32,12 +36,17 @@ class GreyscaleConverter {
             }
         }
 
+        /**
+         * @brief Get the avg intensity of pixel the black and white matrix
+         * 
+         * @param bn the matrix of which we want to compute the pixel avg intensity
+         * @return float 
+         */
         float get_avg_intensity(Mat bn) {
             int channels = bn.channels();
             if (channels > 1) return -1;
             mutex l;
             float * p = (float *) bn.data;
-            //atomic<float> sum;
             float sum = 0;
             vector<thread> tids(this -> nw);
             auto f = [&] (int ti) {
@@ -50,8 +59,7 @@ class GreyscaleConverter {
                             sum = sum + p[i * bn.cols + j];
                         }
                     }
-                } 
-                return;
+                }
             };
             for (int i=0; i<(this->nw); i++) {
                 tids[i] = thread(f, i);
@@ -59,17 +67,23 @@ class GreyscaleConverter {
             for (int i=0; i<(this->nw); i++) {
                 tids[i].join();
             }
-            float avg = sum / bn.total();
+            float avg = (float) sum / bn.total();
+            avg = round( avg * 100.0 ) / 100.0;
             return avg;
         }
 
+        /**
+         * @brief Converts a frames in black and white
+         * 
+         * @return the matrix that represents the frame in greyscale
+         */
         Mat convert_to_greyscale() {
             Mat gr = Mat((this -> m).rows, (this -> m).cols, CV_32F);
             vector<thread> tids(this -> nw);
             auto greyscale_conversion = [&gr, this] (int ti) {
+                // Get the first and final row to analyze for this thread
                 int first = (this -> chunks[ti]).first;
                 int final = (this -> chunks[ti]).second;
-                //cout << "Thread " << ti << " takes rows from " << first << " to " << final << endl;
                 float * pl = (float *) gr.data;
                 float * pm = (float *) (this -> m).data;
                 float r = 0;
@@ -78,6 +92,7 @@ class GreyscaleConverter {
                 int channels = (this -> m).channels();
                 for(int i=first; i<final; i++) {
                     for (int j=0; j<gr.cols; j++) {
+                        // Compute the average value of the three colors
                         r = (float) pm[i * gr.cols * channels + j * channels];
                         g = (float) pm[i * gr.cols * channels + j * channels + 1];
                         b = (float) pm[i * gr.cols * channels + j * channels + 2];
@@ -87,9 +102,11 @@ class GreyscaleConverter {
                 return;
             };
             auto start = std::chrono::high_resolution_clock::now();
+            // Start the thread
             for (int i=0; i<(this->nw); i++) {
                 tids[i] = thread(greyscale_conversion, i);
             }
+            // Wait the threads
             for (int i=0; i<(this->nw); i++) {
                 tids[i].join();
             }

@@ -1,4 +1,4 @@
-make.exe --dry-run --always-make --keep-going --print-directory
+make.exe --dry-run --keep-going --print-directory
 make: Entering directory 'c:/Users/sam18/Documents/Parallel and Distributed Systems/Parallel-Video-Motion-Detection'
 g++ -o ff ff.cpp -pthread -O3 `pkg-config --cflags opencv4` `pkg-config --libs opencv4`
 make: Leaving directory 'c:/Users/sam18/Documents/Parallel and Distributed Systems/Parallel-Video-Motion-Detection'

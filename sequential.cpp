@@ -7,8 +7,13 @@
 using namespace std;
 using namespace cv;
 
-// compile with (maybe some flags are missing): g++ program.cpp -o program `pkg-config --cflags opencv4` `pkg-config --libs opencv4`
-
+/**
+ * @brief Multiply two matrixes pixel per pixel
+ *
+ * @param a Mat to multiply
+ * @param b Mat to multiply
+ * @return A matrix where the pixel i,j is the multiplication of pixel i,j of a and pixel i,j of b.
+ */
 Mat pixel_mul(Mat a, Mat b) {
     Mat res = Mat(a.rows, a.cols, CV_32F);
     float * pa = (float *) a.data;
@@ -22,9 +27,16 @@ Mat pixel_mul(Mat a, Mat b) {
     return res;
 }
 
-float smoothing_px(Mat sub, Mat h1) {
+/**
+ * @brief Computes a pixel of the matrix with filter applied.
+ * 
+ * @param sub matrix to apply the filter to
+ * @param filter filter matrix
+ * @return The central pixel of the matrix with filter applied.
+ */
+float smoothing_px(Mat sub, Mat filter) {
     //Mat mul = sub.mul(h1);
-    Mat mul = pixel_mul(sub, h1);
+    Mat mul = pixel_mul(sub, filter);
     float * p = (float *) mul.data;
     float res = 0;
     for(int i=0; i<mul.rows; i++) {
@@ -35,15 +47,25 @@ float smoothing_px(Mat sub, Mat h1) {
     return res;
 }
 
+/**
+ * @brief Performs smoothing of a matrix given a filter.
+ * 
+ * @param m matrix to filter
+ * @param filter filter matrix
+ * @param show flag to show the result matrix
+ * @param times flag to show the execution time
+ * @return The matrix m with smoothing filter applied
+ */
 Mat smoothing(Mat m, Mat filter, bool show, bool times) {
     float * gp = (float *) m.data;
     auto start = std::chrono::high_resolution_clock::now();
     for(int i=0; i<m.rows; i++) {
         for (int j=0; j<m.cols; j++) { 
+            // Create a rectangle with the bounds of the submatrix 3x3
             cv::Rect r(j-1, i-1, 3, 3);
+            // Check that the bounds don't exceed the matrix bounds
             if (r.x >= 0 && r.y >= 0 && r.x + r.width <= m.cols && r.y + r.height <= m.rows) {
                 Mat submatrix = m(r).clone();
-                //*sp++ = smoothing_px(submatrix, h1);
                 gp[i * m.cols + j] = smoothing_px(submatrix, filter);
             }
         }
@@ -60,6 +82,14 @@ Mat smoothing(Mat m, Mat filter, bool show, bool times) {
     return m;
 }
 
+/**
+ * @brief Converts a matrix from colors to black and white
+ * 
+ * @param frame matrix to convert
+ * @param show flag to show the result matrix
+ * @param times flag to show the execution time
+ * @return Mat converted to grayscale
+ */
 Mat greyscale_conversion(Mat frame, bool show, bool times) {
     Mat gr = Mat(frame.rows, frame.cols, CV_32F);
     float * p = (float *) frame.data;
@@ -87,17 +117,28 @@ Mat greyscale_conversion(Mat frame, bool show, bool times) {
     return gr;
 }
 
-float different_pixels(Mat a, Mat b, float threshold, bool show, bool times) {
+
+/**
+ * @brief Performs background subtraction
+ * 
+ * @param frame frame to subtract to background
+ * @param back background matrix
+ * @param threshold threshold for background subtraction
+ * @param show flag to show the result matrix
+ * @param times flag to show the execution time
+ * @return the fraction of different pixels between the background and the actual frame over the total
+ */
+float different_pixels(Mat frame, Mat back, float threshold, bool show, bool times) {
     int cnt = 0;
-    Mat res = Mat(a.rows, a.cols, CV_32F);
-    float * pa = (float *) a.data;
-    float * pb = (float *) b.data;
+    Mat res = Mat(frame.rows, frame.cols, CV_32F);
+    float * pa = (float *) frame.data;
+    float * pb = (float *) back.data;
     float * pres = (float *) res.data;
     auto start = std::chrono::high_resolution_clock::now();
-    for(int i=0; i<a.rows; i++) {
-        for (int j=0; j<a.cols; j++) {
-            pres[i * a.cols + j] = abs(pb[i * a.cols + j] - pa[i * a.cols + j]);
-            if (pres[i * a.cols + j] > threshold) cnt++;
+    for(int i=0; i<frame.rows; i++) {
+        for (int j=0; j<frame.cols; j++) {
+            pres[i * frame.cols + j] = abs(pb[i * frame.cols + j] - pa[i * frame.cols + j]);
+            if (pres[i * frame.cols + j] > threshold) cnt++;
         }
     }
 
@@ -110,13 +151,14 @@ float different_pixels(Mat a, Mat b, float threshold, bool show, bool times) {
         imshow("Background subtraction", res);
         waitKey(25);
     }
-
-    float diff_fraction = (float) cnt / a.total();
+    float diff_fraction = (float) cnt / frame.total();
     return diff_fraction;
 }
 
 // Sequential pattern
 int main(int argc, char * argv[]) {
+
+    // Parsing of the program arguments
     if (argc == 1) {
         cout << "Usage is " << argv[0] << " filename k show" << endl;
         return 0;
@@ -127,14 +169,25 @@ int main(int argc, char * argv[]) {
         if (strcmp(argv[3], "show") == 0) show = true;
         else if (strcmp(argv[3], "times") == 0) times = true;
     }
-    // Initialization
+    string output_file = "resultst/results.txt";
+    for (int i=1; i<argc; i++) {
+        if (strcmp(argv[i],"-output_file") == 0) {
+            output_file = argv[i+1];
+            break;
+        }
+    }
+    string program_name = argv[0];
+    program_name = program_name.substr(2, program_name.length()-1);
     string filename = argv[1];
     VideoCapture cap(filename);
     int k = atoi(argv[2]); // k for accuracy then
-    float percent = (float) k / 100;
+    float percent = (float) k / 100; // percentage of different pixels to esceed to detect a movement
 
-    // Matrix for smoothing
+    cout << "Sequential implementation" << endl;
+
+    // Filter matrix for smoothing
     Mat h1 = Mat::ones(3, 3, CV_32F);
+    // For smoothing it is used average filtering
     h1 = (Mat_<float>) (1/9 * h1);
     float * h1p = (float *) h1.data;
     for (int i=0; i<h1.rows; i++) {
@@ -142,12 +195,16 @@ int main(int argc, char * argv[]) {
             *h1p++ = (float) 1/9;
         }
     }
+
     int frame_number = 0;
     int different_frames = 0;
-    // Matrixes for make comparison between previous and current frame
-    auto complessive_time_start = std::chrono::high_resolution_clock::now();
-    Mat background; // The first frame is used as background image
+    // Threshold to exceed to consider two pixels different
     float threshold = 0;
+
+    auto complessive_time_start = std::chrono::high_resolution_clock::now();
+
+    // The first frame is used as background image
+    Mat background; 
 
     while(true) {
         Mat frame; 
@@ -161,7 +218,6 @@ int main(int argc, char * argv[]) {
         // Smoothing
         frame = smoothing(frame, h1, show, times);
 
-        // Movement detection
         if (frame_number == 0) { // Case first frame taken as background
             background = frame;
             // Get the average pixel intensity of the background to create a threshold
@@ -173,6 +229,7 @@ int main(int argc, char * argv[]) {
                 }
             }
             float avg_intensity = (float) sum / frame.total();
+            avg_intensity = round( avg_intensity * 100.0 ) / 100.0;
             threshold = avg_intensity / 3;
             cout << "Frames resolution: " << background.rows << " x " << background.cols << endl;
             cout << "Background average intensity: " << avg_intensity << endl;
@@ -191,9 +248,9 @@ int main(int argc, char * argv[]) {
     cout << "Number of frames with movement detected: " << different_frames << endl;
     cout << "Total time passed: " << complessive_usec << endl;
     
-    FileWriter fw("results.txt");
+    FileWriter fw(output_file);
     string time = to_string(complessive_usec);
-    fw.print_results(filename,"sequential",k,-1,show,time,different_frames);
+    fw.print_results(filename, program_name, k, -1, show, time, different_frames);
 
     return(0);
 }
