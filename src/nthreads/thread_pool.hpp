@@ -42,15 +42,15 @@ class ThreadPool {
         atomic<int> different_frames;
         float threshold; // threshold to exceed to consider two pixels different
         float percent; // percentage of different pixels between frame and background to detect movement
-        promise<int> p; // promise used at the end to get the final result form outside the pool
+        promise<int> p; // promise used at the end to get the final result from outside the pool
         future<int> f = (this->p).get_future();
 
     public:
         ThreadPool(Mat filter, int sw, Mat background, int cw, float threshold, float percent, bool show, bool times):
             cw(cw), sw(sw), filter(filter), background(background), threshold(threshold), percent(percent), 
             show(show), times(times) {
-                this -> frame_number = 0;
-                this -> res_number = 0;
+                this -> frame_number = 1;
+                this -> res_number = 1;
                 this -> different_frames = 0;
             }
 
@@ -62,6 +62,7 @@ class ThreadPool {
         void submit_conversion_task(Mat m) {
             // Create the task
             auto f = [this] (Mat m) {
+                this -> frame_number++;
                 GreyscaleConverter converter(m, this->cw, this->show, this->times);
                 m = converter.convert_to_greyscale();
                 submit_task(m);
@@ -158,7 +159,7 @@ class ThreadPool {
                     // Execute task
                     res = t();
                     if (res == 2) { // Case greyscale conversion
-                        this -> frame_number++;
+                        continue;
                     }
                     else if (res == -1) { // Case end
                         break;

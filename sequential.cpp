@@ -160,25 +160,20 @@ int main(int argc, char * argv[]) {
 
     // Parsing of the program arguments
     if (argc == 1) {
-        cout << "Usage is " << argv[0] << " filename k show" << endl;
+        cout << "Usage is " << argv[0] << " filename k" << endl;
         return 0;
     }
     bool show = false;
     bool times = false;
-    if (argc == 4) {
-        if (strcmp(argv[3], "show") == 0) show = true;
-        else if (strcmp(argv[3], "times") == 0) times = true;
-    }
-    string output_file = "resultst/results.txt";
-    for (int i=1; i<argc; i++) {
-        if (strcmp(argv[i],"-output_file") == 0) {
-            output_file = argv[i+1];
-            break;
-        }
-    }
     string program_name = argv[0];
     program_name = program_name.substr(2, program_name.length()-1);
     string filename = argv[1];
+    string output_file = "results/" + filename.substr(filename.find('/')+1, filename.length()-filename.find('/')-5) + ".txt";
+    for (int i=1; i<argc; i++) {
+        if (strcmp(argv[i],"-output_file") == 0) output_file = argv[i+1];
+        if (strcmp(argv[i], "-show") == 0) show = true;
+        if (strcmp(argv[i], "-info") == 0) times = true;
+    }
     VideoCapture cap(filename);
     int k = atoi(argv[2]); // k for accuracy then
     float percent = (float) k / 100; // percentage of different pixels to esceed to detect a movement

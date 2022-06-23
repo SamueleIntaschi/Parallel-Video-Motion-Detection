@@ -89,7 +89,7 @@ class ComparerCollector: public ff_minode_t<Mat> {
         float percent; // Percentage of different pixels between frame and background to detect movement
         int cw; // number of workers for the map reduce
         int different_frames = 0; // number of frame with movement
-        int frame_number = 0; // actual frame
+        int frame_number = 1; // actual frame
         bool has_finished = false; // flag true if the collector has received an EOS
 
     public:

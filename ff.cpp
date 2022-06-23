@@ -22,28 +22,26 @@ int main(int argc, char * argv[]) {
 
     // Parsing of the program arguments
     if (argc == 1) {
-        cout << "Usage is " << argv[0] << " filename accuracy nw" << endl;
+        cout << "Usage is " << argv[0] << " filename k nw" << endl;
+        return 0;
     }
     bool show = false;
     bool times = false;
-    if (argc == 5) {
-        if (strcmp(argv[4], "-show") == 0) show = true;
-        else if (strcmp(argv[4], "-info") == 0) times = true;
-    }
-    string output_file = "results/results.txt";
-    for (int i=1; i<argc; i++) {
-        if (strcmp(argv[i],"-output_file") == 0) {
-            output_file = argv[i+1];
-            break;
-        }
-    }
     string program_name = argv[0];
     program_name = program_name.substr(2, program_name.length()-1);
     string filename = argv[1];
+    string output_file = "results/" + filename.substr(filename.find('/')+1, filename.length()-filename.find('/')-5) + ".txt";
+    for (int i=1; i<argc; i++) {
+        if (strcmp(argv[i],"-output_file") == 0) output_file = argv[i+1];
+        if (strcmp(argv[i], "-show") == 0) show = true;
+        if (strcmp(argv[i], "-info") == 0) times = true;
+    }
+    
     int k = atoi(argv[2]); // k for accuracy then
     int nw = atoi(argv[3]); // number of workers
-    if (k < 4) {
+    if (nw < 4) {
         cout << "Specify at least 4 threads" << endl;
+        return 0;
     }
     int cw = nw/4;
     int sw = nw - (2 * cw);

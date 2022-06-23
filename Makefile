@@ -7,14 +7,8 @@ EXE = ff seq nt res
 ff: ff.cpp
 	$(CXX) -o ff ff.cpp $(LDFLAGS)
 
-ffblock: ff.cpp
-	$(CXX) -DBLOCKING_MODE=true -o ffblock ff.cpp $(LDFLAGS)
-
 fftrace: ff.cpp
 	$(CXX) -DTRACE_FASTFLOW -o ff ff.cpp $(LDFLAGS)
-
-ffnomap: ff.cpp 
-	$(CXX) -DNO_DEFAULT_MAPPING=true -o ffnomap ff.cpp $(LDFLAGS)
 
 cthreads: cthreads.cpp
 	$(CXX) -o native cthreads.cpp $(LDFLAGS)

@@ -19,6 +19,13 @@ class Smoother {
         bool show = false;
         bool times = false;
 
+        /**
+         * @brief Multiply two matrixes pixel per pixel
+         *
+         * @param a Mat to multiply
+         * @param b Mat to multiply
+         * @return A matrix where the pixel i,j is the multiplication of pixel i,j of a and pixel i,j of b.
+         */
         Mat pixel_mul(Mat a, Mat b) {
             Mat res = Mat(a.rows, a.cols, CV_32F);
             float * pa = (float *) a.data;
@@ -32,8 +39,15 @@ class Smoother {
             return res;
         }
 
-        float smoothing_px(Mat sub, Mat h1) {
-            Mat mul = pixel_mul(sub, h1);
+        /**
+         * @brief Computes a pixel of the matrix with filter applied.
+         * 
+         * @param sub matrix to apply the filter to
+         * @param filter filter matrix
+         * @return The central pixel of the matrix with filter applied.
+         */
+        float smoothing_px(Mat sub, Mat filter) {
+            Mat mul = pixel_mul(sub, filter);
             float * p = (float *) mul.data;
             float res = 0;
             for(int i=0; i<mul.rows; i++) {
@@ -47,6 +61,11 @@ class Smoother {
     public:
         Smoother(Mat m, Mat filter, bool show, bool times): m(m), filter(filter), show(show), times(times) {}
 
+        /**
+         * @brief Performs smoothing of a matrix given a filter.
+         * 
+         * @return The matrix with smoothing filter applied
+         */
         Mat smoothing() {
             auto start = std::chrono::high_resolution_clock::now();
             float * sp = (float *) (this -> m).data;

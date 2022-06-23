@@ -53,7 +53,6 @@ class GreyscaleConverter {
         }
 
         Mat convert_to_greyscale() {
-            //Mat * gr = new Mat((this -> m).rows, (this -> m).cols, CV_32F);
             Mat gr = Mat((this -> m).rows, (this -> m).cols, CV_32F);
             int channels = (this -> m).channels();
             float * pl = (float *) (gr).data;
