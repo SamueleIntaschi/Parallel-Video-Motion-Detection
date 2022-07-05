@@ -18,7 +18,7 @@
  *        smoothing
  * 
  */
-class ConverterEmitter: public ff_Map<Mat> {
+class ConverterEmitter: public ff_monode_t<Mat> {
 
     private:
         int cw; // number of workers for map
@@ -40,6 +40,8 @@ class ConverterEmitter: public ff_Map<Mat> {
         Mat * svc (Mat *) {
 
             while (true) {
+                
+                auto start = std::chrono::high_resolution_clock::now();
 
                 Mat frame; 
                 this -> cap >> frame;
@@ -64,9 +66,8 @@ class ConverterEmitter: public ff_Map<Mat> {
                         pl[i * gr.cols + j] = (float) (r + g + b) / channels;
                     }
                 };
-                auto start = std::chrono::high_resolution_clock::now();
-                // Compute the map parallel_for
-                ff_Map::parallel_for(0,frame.rows,1,0,greyscale_conversion,cw);
+                // Compute the parallel_for
+                ff::parallel_for(0,frame.rows,1,0,greyscale_conversion,cw);
                 if (times) {
                     auto duration = std::chrono::high_resolution_clock::now() - start;
                     auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();

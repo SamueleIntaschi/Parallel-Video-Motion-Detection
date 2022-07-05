@@ -10,9 +10,6 @@ ff: ff.cpp
 fftrace: ff.cpp
 	$(CXX) -DTRACE_FASTFLOW -o ff ff.cpp $(LDFLAGS)
 
-cthreads: cthreads.cpp
-	$(CXX) -o native cthreads.cpp $(LDFLAGS)
-
 nt: nthreads.cpp
 	$(CXX) -o nt nthreads.cpp $(LDFLAGS)
 

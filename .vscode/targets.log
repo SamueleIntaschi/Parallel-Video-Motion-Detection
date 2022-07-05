@@ -8,7 +8,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Thu Jun 23 21:40:30 2022
+# Make data base, printed on Tue Jul 05 23:27:52 2022
 
 # Variables
 
@@ -25,7 +25,7 @@ USERPROFILE = C:\Users\sam18
 # environment
 LOCALAPPDATA = C:\Users\sam18\AppData\Local
 # environment
-VSCODE_IPC_HOOK_EXTHOST = \\.\pipe\vscode-ipc-1820cba0-ffdc-4cc5-a6fc-cec91194b5be-sock
+VSCODE_IPC_HOOK_EXTHOST = \\.\pipe\vscode-ipc-8e5bc52d-ed57-4b5c-91d7-1fd9e5b711c7-sock
 # environment
 VSCODE_CWD = C:\Users\sam18\AppData\Local\Programs\Microsoft VS Code
 # environment
@@ -43,7 +43,7 @@ GOPATH = C:\Users\sam18\go
 # automatic
 @D = $(patsubst %/,%,$(patsubst %\,%,$(dir $@)))
 # environment
-CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_19068_HGFCDPFPMAPMMXPW
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_13512_BNTRJABZEBSVCOED
 # environment
 FPS_BROWSER_USER_PROFILE_STRING = Default
 # environment
@@ -99,7 +99,7 @@ MAKEFILE_LIST := Makefile
 # environment
 VSCODE_VERBOSE_LOGGING = true
 # environment
-VSCODE_PID = 19068
+VSCODE_PID = 13512
 # automatic
 ?D = $(patsubst %/,%,$(patsubst %\,%,$(dir $?)))
 # automatic
@@ -231,21 +231,15 @@ PROCESSOR_IDENTIFIER = AMD64 Family 23 Model 96 Stepping 1, AuthenticAMD
 
 # Directories
 
-# . (key c:/Users/sam18/Documents/Parallel and Distributed Systems/Parallel-Video-Motion-Detection, mtime 1656010934): 16 files, no impossibilities.
+# . (key c:/Users/sam18/Documents/Parallel and Distributed Systems/Parallel-Video-Motion-Detection, mtime 1657038919): 15 files, no impossibilities.
 
-# 16 files, no impossibilities in 1 directories.
+# 15 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
 # No implicit rules.
 
 # Files
-
-# Not a target:
-cthreads.cpp:
-#  Implicit rule search has not been done.
-#  Modification time never checked.
-#  File has not been updated.
 
 # Not a target:
 sequential.cpp:
@@ -276,7 +270,7 @@ results.cpp:
 # Not a target:
 Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2022-06-23 17:21:10
+#  Last modified 2022-07-05 14:53:13
 #  File has been updated.
 #  Successfully updated.
 
@@ -284,7 +278,7 @@ clean:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from 'Makefile', line 26):
+#  recipe to execute (from 'Makefile', line 23):
 	rm $(EXE)
 
 # Not a target:
@@ -310,21 +304,14 @@ seq: sequential.cpp
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from 'Makefile', line 20):
+#  recipe to execute (from 'Makefile', line 17):
 	$(CXX) -o seq sequential.cpp $(LDFLAGS)
-
-cthreads: cthreads.cpp
-#  Implicit rule search has not been done.
-#  Modification time never checked.
-#  File has not been updated.
-#  recipe to execute (from 'Makefile', line 14):
-	$(CXX) -o native cthreads.cpp $(LDFLAGS)
 
 res: results.cpp
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from 'Makefile', line 23):
+#  recipe to execute (from 'Makefile', line 20):
 	$(CXX) -o res results.cpp
 
 # Not a target:
@@ -337,23 +324,23 @@ nt: nthreads.cpp
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from 'Makefile', line 17):
+#  recipe to execute (from 'Makefile', line 14):
 	$(CXX) -o nt nthreads.cpp $(LDFLAGS)
 
 # files hash-table stats:
-# Load=16/1024=2%, Rehash=0, Collisions=0/32=0%
+# Load=14/1024=1%, Rehash=0, Collisions=0/29=0%
 # VPATH Search Paths
 
 # No 'vpath' search paths.
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 24 / storage = 177 B / avg = 7 B
-# current buf: size = 8174 B / used = 177 B / count = 24 / avg = 7 B
+# strcache buffers: 1 (0) / strings = 23 / storage = 166 B / avg = 7 B
+# current buf: size = 8174 B / used = 166 B / count = 23 / avg = 7 B
 
-# strcache performance: lookups = 43 / hit rate = 44%
+# strcache performance: lookups = 39 / hit rate = 41%
 # hash-table stats:
-# Load=24/8192=0%, Rehash=0, Collisions=3/43=7%
-# Finished Make data base on Thu Jun 23 21:40:30 2022
+# Load=23/8192=0%, Rehash=0, Collisions=2/39=5%
+# Finished Make data base on Tue Jul 05 23:27:52 2022
 
  

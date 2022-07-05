@@ -23,7 +23,6 @@ class Comparer {
 
     private:
         Mat background;
-        Mat frame;
         int nw; // number of workers
         bool show = false;
         bool times = false;
@@ -31,25 +30,45 @@ class Comparer {
     
     public:
     
-        Comparer(Mat background, Mat frame, int nw, float threshold, bool show, bool times):
-            background(background), frame(frame), nw(nw), threshold(threshold), show(show), times(times) {}
+        Comparer(Mat background, int nw, float threshold, bool show, bool times):
+            background(background), nw(nw), threshold(threshold), show(show), times(times) {}
+
+        float different_pixels_seq(Mat frame) {
+            int cnt = 0;
+            Mat res = Mat(frame.rows, frame.cols, CV_32F);
+            float * pa = (float *) frame.data;
+            float * pb = (float *) (this->background).data;
+            float * pres = (float *) res.data;
+            for(int i=0; i<frame.rows; i++) {
+                for (int j=0; j<frame.cols; j++) {
+                    pres[i * frame.cols + j] = abs(pb[i * frame.cols + j] - pa[i * frame.cols + j]);
+                    if (pres[i * frame.cols + j] > threshold) cnt++;
+                }
+            }
+            if (show) {
+                imshow("Background subtraction", res);
+                waitKey(25);
+            }
+            float diff_fraction = (float) cnt / frame.total();
+            return diff_fraction;
+        }
 
         /**
          * @brief Performs background subtraction and count different pixels using map and reduce
          * 
          * @return the fraction of different pixels between background and current frame over the total
          */
-        float different_pixels() {
-            Mat res = Mat((this->frame).rows, (this->frame).cols, CV_32F);
-            float * pa = (float *) (this->frame).data;
+        float different_pixels(Mat frame) {
+            Mat res = Mat(frame.rows, frame.cols, CV_32F);
+            float * pa = (float *) frame.data;
             float * pb = (float *) (this->background).data;
             float * pres = (float *) res.data;
             int different_pixels = 0; // number of different pixels between background and current frame
             auto comparing = [&] (int i, int &diff_pixels) {
                 // For each pixel of the row increment the counter if the difference is bigger than the threshold
-                for (int j=0; j<(this->frame).cols; j++) {
-                    pres[i * (this->frame).cols + j] = abs(pb[i * (this->frame).cols + j] - pa[i * (this->frame).cols + j]);
-                    if (pres[i * (this->frame).cols + j] > this->threshold) diff_pixels++;
+                for (int j=0; j<frame.cols; j++) {
+                    pres[i * frame.cols + j] = abs(pb[i * frame.cols + j] - pa[i * frame.cols + j]);
+                    if (pres[i * frame.cols + j] > this->threshold) diff_pixels++;
                 }
             };
             // lambda to aggregate the number of different pixels in the
@@ -58,12 +77,12 @@ class Comparer {
             };
             auto start = std::chrono::high_resolution_clock::now();
             ParallelForReduce<int> pf(this->nw, true);
-            pf.parallel_reduce(different_pixels, 0, 0, (this->frame).rows, 1, comparing, reduce, this->nw);
-            float diff_pixels_fraction = (float) different_pixels/(this->frame).total();
+            pf.parallel_reduce(different_pixels, 0, 0, frame.rows, 1, comparing, reduce, this->nw);
+            float diff_pixels_fraction = (float) different_pixels/frame.total();
             if (times) {
                 auto duration = std::chrono::high_resolution_clock::now() - start;
                 auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
-                cout << "Times passed to compare frame with background: " << usec << " usec" << endl;
+                cout << "Times spent for background subtraction: " << usec << " usec" << endl;
             }
             if (show) {
                 imshow("Background Subtraction", res);
@@ -89,13 +108,16 @@ class ComparerCollector: public ff_minode_t<Mat> {
         float percent; // Percentage of different pixels between frame and background to detect movement
         int cw; // number of workers for the map reduce
         int different_frames = 0; // number of frame with movement
-        int frame_number = 1; // actual frame
+        int frame_number = 0; // actual frame
         bool has_finished = false; // flag true if the collector has received an EOS
+        Comparer * comparer;
 
     public:
 
         ComparerCollector(Mat background, int cw, float percent, float threshold, bool show, bool times): 
-            background(background), cw(cw), percent(percent), threshold(threshold), show(show), times(times) {}
+            background(background), cw(cw), percent(percent), threshold(threshold), show(show), times(times) {
+                comparer = new Comparer(this->background, this->cw, this->threshold, this->show, this->times);
+            }
 
         /**
          * @brief Main function of the collector node, it receives prepared frames, compares them with background and
@@ -105,8 +127,7 @@ class ComparerCollector: public ff_minode_t<Mat> {
          */
         Mat * svc(Mat * m) {
             if (m != EOS) {
-                Comparer c(this->background, *m,this->cw, this->threshold, this->show, this->times);
-                float diff = c.different_pixels();
+                float diff = comparer->different_pixels_seq(*m);
                 if (diff > this->percent) (this->different_frames)++;
                 delete m;
             }
@@ -121,6 +142,7 @@ class ComparerCollector: public ff_minode_t<Mat> {
          */
         void svc_end() {
             cout << "Number of frames with movement detected: " << different_frames << " on a total of " << frame_number << " frames" << endl;
+            delete comparer;
             this -> has_finished = true;
         }
 

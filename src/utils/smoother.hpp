@@ -68,14 +68,18 @@ class Smoother {
          */
         Mat smoothing() {
             auto start = std::chrono::high_resolution_clock::now();
+            Mat res = Mat(m.rows, m.cols, CV_32F);
+            float * mp = (float *) res.data;
             float * sp = (float *) (this -> m).data;
             for(int i=0; i<(this->m).rows; i++) {
                 for (int j=0; j<(this->m).cols; j++) { 
                     cv::Rect r(j-1, i-1, 3, 3);
-                    if (r.x >= 0 && r.y >= 0 && r.x + r.width <= (this->m).cols && r.y + r.height <= (this->m).rows) {
-                        Mat submatrix = (this->m)(r).clone();
-                        float val = sp[i*m.cols + j];
-                        sp[i * m.cols + j] = smoothing_px(submatrix, (this->filter));
+                    if (r.x >= 0 && r.y >= 0 && r.x + r.width < (this->m).cols && r.y + r.height < (this->m).rows) {
+                        Mat submatrix = (this->m)(r);
+                        mp[i * m.cols + j] = smoothing_px(submatrix, (this->filter));
+                    }
+                    else {                            
+                        mp[i * res.cols + j] = sp[i * res.cols + j];
                     }
                 }
             }
@@ -85,9 +89,9 @@ class Smoother {
                 cout << "Times passed for smoothing: " << usec << " usec" << endl;
             }
             if (show) {
-                imshow("Smoothing", (this -> m));
+                imshow("Smoothing", res);
                 waitKey(25);
             }
-            return (this -> m);
+            return res;
         }
 };

@@ -1,4 +1,6 @@
 Videos/
+.vscode/
+results/
 *backup*
 seq
 native

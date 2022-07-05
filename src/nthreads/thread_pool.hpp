@@ -9,7 +9,7 @@
 #include <condition_variable>
 #include <future>
 #include "../nthreads/comparer.hpp"
-#include "../utils/smoother.hpp"
+#include "../nthreads/smoother.hpp"
 #include "../nthreads/greyscale_converter.hpp"
 
 using namespace std;
@@ -22,19 +22,22 @@ using namespace cv;
 class ThreadPool {
 
     private: 
-        int sw; // Smoothing workers
-        int cw; // Map workers for conversion and background subtraction
+        int cm_p = 0;
+        int sm_p = 0;
         mutex l; // mutex for smoothing tasks
         mutex lr; // mutex for conversion or comparing tasks
+        mutex lstop; // lock to set stop flag
         condition_variable cond; // cond variable for smoothing tasks
         condition_variable cond_res; // cond variable for conversion or comparing tasks
-        vector<thread> tids;
-        thread converter_comparer; // thread that performs conversion or comparing
+        vector<thread> sm_tids;
+        vector<thread> cc_tids;
+        //thread converter_comparer; // thread that performs conversion or comparing
+        //thread smoother_thread;
         deque<function<Mat()>> tasks; // queue for smoothing tasks
         deque<function<float()>> results; // queue for results of smoothing or frames to be converted
         Mat filter;
         Mat background;
-        bool stop = false; // flag to stop the thread pool
+        atomic<bool> stop; // flag to stop the thread pool
         bool show = false;
         bool times = false;
         atomic<int> res_number;
@@ -44,13 +47,17 @@ class ThreadPool {
         float percent; // percentage of different pixels between frame and background to detect movement
         promise<int> p; // promise used at the end to get the final result from outside the pool
         future<int> f = (this->p).get_future();
+        Smoother * smoother;
+        GreyscaleConverter * converter;
+        Comparer * comparer;
 
     public:
-        ThreadPool(Mat filter, int sw, Mat background, int cw, float threshold, float percent, bool show, bool times):
-            cw(cw), sw(sw), filter(filter), background(background), threshold(threshold), percent(percent), 
-            show(show), times(times) {
-                this -> frame_number = 1;
-                this -> res_number = 1;
+        ThreadPool(Smoother * smoother, GreyscaleConverter * converter, Comparer * comparer, Mat filter, int cm_p, int sm_p, Mat background, float threshold, float percent, bool show, bool times):
+            filter(filter), background(background), threshold(threshold), percent(percent), 
+            show(show), times(times), smoother(smoother), converter(converter), comparer(comparer), cm_p(cm_p), sm_p(sm_p) {
+                this -> stop = false;
+                this -> frame_number = -1;
+                this -> res_number = 0;
                 this -> different_frames = 0;
             }
 
@@ -62,9 +69,9 @@ class ThreadPool {
         void submit_conversion_task(Mat m) {
             // Create the task
             auto f = [this] (Mat m) {
-                this -> frame_number++;
-                GreyscaleConverter converter(m, this->cw, this->show, this->times);
-                m = converter.convert_to_greyscale();
+                //this -> frame_number++;
+                //GreyscaleConverter converter(m, this->cw, this->show, this->times);
+                m = converter -> convert_to_greyscale(m);
                 submit_task(m);
                 return (float)2;
             };
@@ -85,8 +92,7 @@ class ThreadPool {
         void submit_result(Mat m) {
             // Create the task
             auto f = [this] (Mat m) {
-                Comparer c(this->background, m, this->cw, this->threshold, this->show, this->times);
-                return c.different_pixels();
+                return this->comparer->different_pixels(m);
             };
             // Insert the task in the queue
             auto fb = (bind(f, m));
@@ -103,11 +109,11 @@ class ThreadPool {
          * @param m the matrix to smooth
          */
         void submit_task(Mat m) {
-            auto f = [this] (Mat m, Mat filter) {
-                Smoother s(m, filter, this->show, this->times);
-                return s.smoothing();
+            auto f = [this] (Mat m) {
+                //Smoother s(m, filter, this->sw, this->show, this->times);
+                return (this->smoother)->smoothing(m);
             };
-            auto fb = bind(f, m, this->filter);
+            auto fb = bind(f, m);
             {
                 unique_lock<mutex> lock(this -> l);
                 tasks.push_back(fb);
@@ -122,7 +128,7 @@ class ThreadPool {
         void start_pool() {
 
             // Body of the thread that performs smoothing tasks
-            auto body_sm = [&] (int i) {
+            auto body_sm = [&] () {
                 function<Mat()> t = []() {return Mat::ones(2, 2, CV_32F);};
                 while (!(this->stop)) {
                     {
@@ -142,59 +148,60 @@ class ThreadPool {
             };
             
             // Body of the thread that performs greyscale conversion or background subtraction depending on the task it takes
-            auto body_cc = [&] (promise<int> && pp) {
+            auto body_cc = [&] () {
                 float res = 0;
-                int diff_frames = 0;
                 function<float()> t = []() {return -1;};
                 // Loop until background subtraction is done for all the frames of the video
-                while (this->res_number <= this->frame_number) {
+                while (this->res_number <= this->frame_number || this->frame_number < 0) {
                     {
                         unique_lock<mutex> lock(this -> lr);
                         cond_res.wait(lock, [&](){return(!results.empty() || (this->stop));});
                         if (!results.empty()) {
                             t = results.front();
                             results.pop_front();
-                        } 
+                        }
+                        else if (this ->stop) {
+                            break;
+                        }
                     }
                     // Execute task
                     res = t();
-                    if (res == 2) { // Case greyscale conversion
-                        continue;
-                    }
-                    else if (res == -1) { // Case end
-                        break;
-                    }
-                    else { // Case background subtraction
-                        if (res > this->percent) diff_frames++;
+                    if (res >= 0 && res <= 1) { // Case background subtraction
+                        if (res > this->percent) this->different_frames++;
                         this -> res_number++;
-                        cout << "Frames with movement detected until now: " << diff_frames << " over " << res_number << " analyzed" << endl;
+                        cout << "Frames with movement detected until now: " << this->different_frames << " over " << res_number << " analyzed" << endl;
                     }
-                    if (res_number == frame_number) break;
+                    if (this->res_number == this->frame_number && this->frame_number >= 0) break;
                 }
                 // Stop the pool when all the frame have been analysed
-                stop_pool();
-                // Set the value of the promise to communicate it to the main program
-                pp.set_value(diff_frames);
+                {
+                    unique_lock<mutex> lock(this -> lstop);
+                    if (!stop) {
+                        this -> stop = true;
+                        cond.notify_all();
+                        cond_res.notify_all();
+                        // Set the value of the promise to communicate it to the main program
+                        (this->p).set_value(this->different_frames);
+                    }
+                }
             };
             // Starts the thread
-            for (int i=0; i<(this->sw); i++) {
-                (this -> tids).push_back(thread(body_sm, i));
+            for (int i=0; i<(this->cm_p); i++) {
+                (this -> cc_tids).push_back(thread(body_cc));
             }
-            this -> converter_comparer = thread(body_cc, move(this->p));
+            
+            for (int i=0; i<(this->sm_p); i++) {
+                (this -> sm_tids).push_back(thread(body_sm));
+            }
         }
 
         /**
-         * @brief Stop the threads of the pool
+         * @brief Communicate the number of frames from the reader when it has finished
          * 
+         * @param n the number of frames taken by the video
          */
-        void stop_pool() {
-            this -> stop = true;
-            cond.notify_all();
-            cond_res.notify_all();
-            for (int i=0; i<(this->sw); i++) {
-                (this -> tids)[i].join();
-            }
-            return;
+        void communicate_frames_number(int n) {
+            this -> frame_number = n;
         }
 
         /**
@@ -203,7 +210,15 @@ class ThreadPool {
          * @return the number of frames with movement detected
          */
         int get_final_result() {
-            (this->converter_comparer).join();
+            for (int i=0; i<(this->sm_p); i++) {
+                (this -> sm_tids)[i].join();
+            }
+            for (int i=0; i<(this->cm_p); i++) {
+                (this -> cc_tids)[i].join();
+            }
+            delete smoother;
+            delete converter;
+            delete comparer;
             return (this->f).get();
         }
 

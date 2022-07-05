@@ -17,69 +17,47 @@ using namespace cv;
  * 
  */
 class Comparer {
+    
     private:
         Mat background;
-        Mat frame;
-        int nw; // Number of workers
-        vector<pair<int,int>> chunks;
         bool show = false;
         float threshold;
         bool times = false;
+        vector<chrono::microseconds> usecs; 
     
     public:
 
-        Comparer(Mat background, Mat frame, int nw, float threshold, bool show, bool times):
-            background(background), frame(frame), nw(nw), threshold(threshold), show(show), times(times) {
-            int chunk_rows = (this->frame).rows/nw;
-            // Compute the range of rows each thread has to analyze        
-            for (int i=0; i<nw; i++) {
-                auto start = i * chunk_rows;
-                auto stop = (i==(nw-1) ? frame.rows : start + chunk_rows);
-                chunks.push_back(make_pair(start, stop));
-            }
-        }
+        Comparer(Mat background, float threshold, bool show, bool times):
+            background(background), threshold(threshold), show(show), times(times) {}
 
         /**
          * @brief Performs background subtraction
          * 
          * @return the fraction of different pixels between the background and the actual frame over the total
          */
-        float different_pixels() {
+        float different_pixels(Mat frame) {
             auto start = std::chrono::high_resolution_clock::now();
-            vector<thread> tids(nw);
-            // Global variable that each thread increments
-            atomic<int> different_pixels;
-            different_pixels = 0;
-            Mat res = Mat((this->frame).rows, (this->frame).cols, CV_32F);
-            float * pa = (float *) (this->frame).data;
+            int cnt = 0;
+            Mat res = Mat(frame.rows, frame.cols, CV_32F);
+            float * pa = (float *) frame.data;
             float * pb = (float *) (this->background).data;
             float * pres = (float *) res.data;
-            auto comparing = [&] (int ti) {
-                int first = (this->chunks)[ti].first;
-                int final = (this->chunks)[ti].second;
-                for(int i=first; i<final; i++) {
-                    for (int j=0; j<(this->frame).cols; j++) {
-                        pres[i * (this->frame).cols + j] = abs(pb[i * (this->frame).cols + j] - pa[i * (this->frame).cols + j]);
-                        if (pres[i * (this->frame).cols + j] > this->threshold) different_pixels++;
-                    }
+            for(int i=0; i<frame.rows; i++) {
+                for (int j=0; j<frame.cols; j++) {
+                    pres[i * frame.cols + j] = abs(pb[i * frame.cols + j] - pa[i * frame.cols + j]);
+                    if (pres[i * frame.cols + j] > threshold) cnt++;
                 }
-            };
-            for (int i=0; i<(this->nw); i++) {
-                tids[i] = thread(comparing, i);
             }
-            for (int i=0; i<(this->nw); i++) {
-                tids[i].join();
-            }
-            float diff_pixels_fraction = (float) different_pixels/(this->frame).total();
             if (times) {
                 auto duration = std::chrono::high_resolution_clock::now() - start;
                 auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
-                cout << "Times passed to compare frame with background: " << usec << " usec" << endl;
+                cout << "Time spent for background subtraction: " << usec << " usec" << endl;
             }
             if (show) {
-                imshow("Background Subtraction", res);
+                imshow("Background subtraction", res);
                 waitKey(25);
             }
-            return diff_pixels_fraction;
+            float diff_fraction = (float) cnt / frame.total();
+            return diff_fraction;
         }
 };
