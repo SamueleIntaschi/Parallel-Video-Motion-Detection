@@ -20,8 +20,6 @@ class GreyscaleConverter {
     private:
         bool show = false;
         bool times = false;
-        vector<chrono::microseconds> usecs; 
-
 
     public:
 

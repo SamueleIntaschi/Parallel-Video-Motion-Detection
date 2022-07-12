@@ -29,32 +29,31 @@ class ThreadPool {
         mutex lstop; // lock to set stop flag
         condition_variable cond; // cond variable for smoothing tasks
         condition_variable cond_res; // cond variable for conversion or comparing tasks
-        vector<thread> sm_tids;
-        vector<thread> cc_tids;
-        //thread converter_comparer; // thread that performs conversion or comparing
-        //thread smoother_thread;
+        vector<thread> sm_tids; // number of stream parallel workers for smoothing
+        vector<thread> cc_tids; // number of stream parallel workers for grayscale conversion and background subtraction
         deque<function<Mat()>> tasks; // queue for smoothing tasks
         deque<function<float()>> results; // queue for results of smoothing or frames to be converted
-        Mat filter;
-        Mat background;
+        Mat background; // background frame
         atomic<bool> stop; // flag to stop the thread pool
         bool show = false;
-        bool times = false;
-        atomic<int> res_number;
-        atomic<int> frame_number;
-        atomic<int> different_frames;
+        bool times = false; 
+        atomic<int> res_number; // number of frames analyzed
+        atomic<int> frame_number; // total number of frames
+        atomic<int> different_frames; // number of frames with movement detected (different from background)
         float threshold; // threshold to exceed to consider two pixels different
         float percent; // percentage of different pixels between frame and background to detect movement
         promise<int> p; // promise used at the end to get the final result from outside the pool
         future<int> f = (this->p).get_future();
+        // Stages of the stream
         Smoother * smoother;
         GreyscaleConverter * converter;
         Comparer * comparer;
 
     public:
-        ThreadPool(Smoother * smoother, GreyscaleConverter * converter, Comparer * comparer, Mat filter, int cm_p, int sm_p, Mat background, float threshold, float percent, bool show, bool times):
-            filter(filter), background(background), threshold(threshold), percent(percent), 
-            show(show), times(times), smoother(smoother), converter(converter), comparer(comparer), cm_p(cm_p), sm_p(sm_p) {
+        ThreadPool(Smoother * smoother, GreyscaleConverter * converter, Comparer * comparer, int cm_p, int sm_p, Mat background, 
+            float threshold, float percent, bool show, bool times):
+            background(background), threshold(threshold), percent(percent), show(show), times(times), smoother(smoother), 
+            converter(converter), comparer(comparer), cm_p(cm_p), sm_p(sm_p) {
                 this -> stop = false;
                 this -> frame_number = -1;
                 this -> res_number = 0;
@@ -62,15 +61,13 @@ class ThreadPool {
             }
 
         /**
-         * @brief Creates a task to convert a frame in black and white and inserts it to the queue
+         * @brief Creates a task to convert a frame in black and white and putss it in the queue
          * 
          * @param m the frame to convert to grayscale
          */
         void submit_conversion_task(Mat m) {
             // Create the task
             auto f = [this] (Mat m) {
-                //this -> frame_number++;
-                //GreyscaleConverter converter(m, this->cw, this->show, this->times);
                 m = converter -> convert_to_greyscale(m);
                 submit_task(m);
                 return (float)2;
@@ -85,7 +82,7 @@ class ThreadPool {
         }
 
         /**
-         * @brief Creates a task to compare a frame with background and inserts it to the queue
+         * @brief Creates a task to compare a frame with background and puts it in the queue
          * 
          * @param m the frame to compare to background
          */
@@ -104,13 +101,12 @@ class ThreadPool {
         }
 
         /**
-         * @brief Create a task to performs smoothing on a matrix and inserts it to the queue
+         * @brief Create a task to performs smoothing on a matrix and puts it in the queue
          * 
          * @param m the matrix to smooth
          */
         void submit_task(Mat m) {
             auto f = [this] (Mat m) {
-                //Smoother s(m, filter, this->sw, this->show, this->times);
                 return (this->smoother)->smoothing(m);
             };
             auto fb = bind(f, m);
@@ -144,10 +140,11 @@ class ThreadPool {
                     }
                     Mat s = t();
                     this -> submit_result(s);
+                    if (this->stop) return;
                 }
             };
             
-            // Body of the thread that performs greyscale conversion or background subtraction depending on the task it takes
+            // Body of the thread that do greyscale conversion or background subtraction depending on the task it takes
             auto body_cc = [&] () {
                 float res = 0;
                 function<float()> t = []() {return -1;};
@@ -155,12 +152,16 @@ class ThreadPool {
                 while (this->res_number <= this->frame_number || this->frame_number < 0) {
                     {
                         unique_lock<mutex> lock(this -> lr);
-                        cond_res.wait(lock, [&](){return(!results.empty() || (this->stop));});
+                        cond_res.wait(lock, [&](){return(!results.empty() || (this->stop) || 
+                            (this->res_number == this->frame_number && this->frame_number >= 0));});
                         if (!results.empty()) {
                             t = results.front();
                             results.pop_front();
                         }
                         else if (this ->stop) {
+                            break;
+                        }
+                        else if (this->res_number == this->frame_number && this->frame_number >= 0) {
                             break;
                         }
                     }
@@ -170,7 +171,7 @@ class ThreadPool {
                         if (res > this->percent) this->different_frames++;
                         this -> res_number++;
                         cout << "Frames with movement detected until now: " << this->different_frames << " over " << res_number << " analyzed" << endl;
-                    }
+                    } // If it is the grayscale conversion case, it is not needed to do anything here
                     if (this->res_number == this->frame_number && this->frame_number >= 0) break;
                 }
                 // Stop the pool when all the frame have been analysed
@@ -189,7 +190,6 @@ class ThreadPool {
             for (int i=0; i<(this->cm_p); i++) {
                 (this -> cc_tids).push_back(thread(body_cc));
             }
-            
             for (int i=0; i<(this->sm_p); i++) {
                 (this -> sm_tids).push_back(thread(body_sm));
             }
@@ -202,6 +202,7 @@ class ThreadPool {
          */
         void communicate_frames_number(int n) {
             this -> frame_number = n;
+            cond_res.notify_all();
         }
 
         /**
@@ -216,9 +217,11 @@ class ThreadPool {
             for (int i=0; i<(this->cm_p); i++) {
                 (this -> cc_tids)[i].join();
             }
+            // Delete the stages of the pipe
             delete smoother;
             delete converter;
             delete comparer;
+            // Return the total number of frames with movement detected
             return (this->f).get();
         }
 

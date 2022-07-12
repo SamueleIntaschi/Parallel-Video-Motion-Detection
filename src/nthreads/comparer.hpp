@@ -13,7 +13,7 @@ using namespace cv;
 
 /**
  * @brief Class that performs background subtraction and computes the fraction of
- *        different pixels over the total
+ *        different pixels out of the total
  * 
  */
 class Comparer {
@@ -23,7 +23,6 @@ class Comparer {
         bool show = false;
         float threshold;
         bool times = false;
-        vector<chrono::microseconds> usecs; 
     
     public:
 
@@ -38,14 +37,13 @@ class Comparer {
         float different_pixels(Mat frame) {
             auto start = std::chrono::high_resolution_clock::now();
             int cnt = 0;
-            Mat res = Mat(frame.rows, frame.cols, CV_32F);
             float * pa = (float *) frame.data;
             float * pb = (float *) (this->background).data;
-            float * pres = (float *) res.data;
             for(int i=0; i<frame.rows; i++) {
                 for (int j=0; j<frame.cols; j++) {
-                    pres[i * frame.cols + j] = abs(pb[i * frame.cols + j] - pa[i * frame.cols + j]);
-                    if (pres[i * frame.cols + j] > threshold) cnt++;
+                    float difference = (float) abs(pb[i * frame.cols + j] - pa[i * frame.cols + j]);
+                    pa[i * frame.cols + j] = difference;
+                    if (difference > threshold) cnt++;
                 }
             }
             if (times) {
@@ -54,7 +52,7 @@ class Comparer {
                 cout << "Time spent for background subtraction: " << usec << " usec" << endl;
             }
             if (show) {
-                imshow("Background subtraction", res);
+                imshow("Background subtraction", frame);
                 waitKey(25);
             }
             float diff_fraction = (float) cnt / frame.total();

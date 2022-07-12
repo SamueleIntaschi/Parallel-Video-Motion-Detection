@@ -17,7 +17,6 @@ for file in $(command ls); do
     if [[ $file == *.txt ]]; then
         echo "In file $file, with k = $p, average values for number of threads are"
         for ((i=-1; i<=$nwp; i++)); do
-            #./compute_avg.sh $file $t $i $p 
             sum=0
             cnt=0
             while IFS="," read -r record type percent nw show usec result; do

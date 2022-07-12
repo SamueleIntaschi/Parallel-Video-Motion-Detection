@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -std=c++17 
-LDFLAGS = -pthread -O3 `pkg-config --cflags opencv4` `pkg-config --libs opencv4`
+LDFLAGS = -pthread -O3 -ftree-vectorize `pkg-config --cflags opencv4` `pkg-config --libs opencv4`
 
 EXE = ff seq nt res
 

@@ -7,92 +7,112 @@
 #include <mutex>
 #include <vector>
 #include <ctime>
-
 #include "src/nthreads/thread_pool.hpp"
 #include "src/utils/file_writer.hpp"
 
 using namespace std;
 using namespace cv;
 
-//TODO togliere tempo medio per ogni fase perché richiederebbe l'uso di una lock per aggiornare l'array dei tempi
-//TODO ogni tanto si verifica un errore double free, capire dove e perché
+/**
+ * @brief Print how to use the program
+ * 
+ * @param prog the name of the program
+ */
+void print_usage(string prog) {
+    cout << "Basic usage is " << prog << " filename k -nw number_of_threads" << endl;
+    cout << "Options are: \n" <<
+    "-info: shows times information \n" <<
+    "-show: shows results frames for each stage \n" <<
+    "-specific_stage_nw data_smoothing_workers stream_smoothing_workers stream_converter_comparer_workers: specifies the number of threads to use for each phase\n"
+    << endl;
+}
 
 // Native C++ threads implementation
 int main(int argc, char * argv[]) {
 
     auto complessive_time_start = std::chrono::high_resolution_clock::now();
 
-    // Parsing of the program arguments
     if (argc == 1) {
-        cout << "Usage is " << argv[0] << " filename k nw np" << endl;
+        print_usage(argv[0]);
         return 0;
     }
+    // number of stream parallel workers used for smoothing
+    int stream_smoothing_workers = 1; 
+    // number of stream parallel workers used for grayscale conversion and background subtraction
+    int stream_cc_workers = 1;
+    // number of data parallel workers used for smoothing
+    int data_smoothing_workers = 1;
+    // total number of threads to use
+    int nw = 0;
+    // flag to show result frames for each phase
     bool show = false;
+    // flag to show the time for each phase
     bool times = false;
-    string program_name = argv[0];
-    string filename = argv[1];
-    program_name = program_name.substr(2, program_name.length()-1);
-    string output_file = "results/" + filename.substr(filename.find('/')+1, filename.length() - filename.find('/')-(filename.length() - filename.find('.')) - 1) + ".txt";
+
+    // Options parsing
     for (int i=1; i<argc; i++) {
-        if (strcmp(argv[i],"-output_file") == 0) output_file = argv[i+1];
         if (strcmp(argv[i], "-show") == 0) show = true;
         if (strcmp(argv[i], "-info") == 0) times = true;
-    }
-    int k = atoi(argv[2]); // k for accuracy then
-    int nw = atoi(argv[3]); // number of workers at each stage
-    //int np = atoi(argv[4]); // number of threads in the pipe
-    
-    // Split the number of threads for the three phases
-    
-
-    int stream_smoothing_workers = 1;
-    int stream_comparer_workers = 1;
-    int data_smoothing_workers = 1;
-
-    // Split the workers
-    if (nw > 3 && nw <= 8) {
-        stream_comparer_workers = 2;
-        data_smoothing_workers = 1;
-        stream_smoothing_workers = nw-2;
-    }
-    else if (nw > 8 && nw <= 16) {
-        stream_comparer_workers = 4;
-        data_smoothing_workers = 2;
-        int r = nw - stream_comparer_workers;
-        stream_smoothing_workers =  r / 2;
-    }
-    else if (nw > 16 && nw <= 24) {
-        data_smoothing_workers = 3;
-        stream_comparer_workers = 3;      
-        int r = nw - stream_comparer_workers;  
-        stream_smoothing_workers = r / 3;
-    }
-    else if (nw > 24) {
-        data_smoothing_workers = 4;
-        stream_comparer_workers = (nw - 4)/4;      
-        int r = nw - stream_comparer_workers;  
-        stream_smoothing_workers = r / 4;
-    }
-    int rest = nw - (data_smoothing_workers*stream_smoothing_workers) - stream_comparer_workers;
-    if (rest > 0) stream_comparer_workers += rest;
-
-    cout << "Native C++ threads implementation" << endl;
-    cout << "Total threads used: " << (data_smoothing_workers * stream_smoothing_workers) << " for smoothing and " << stream_comparer_workers << " for background subtraction and grayscale conversion" << endl; 
-    // Percentage of different pixels between frame and background to detect movement
-    float percent = (float) k / 100;
-    VideoCapture cap(filename);
-    // Filter matrix for smoothing
-    Mat h1 = Mat::ones(3, 3, CV_32F); 
-    // For smoothing it is used average filtering
-    h1 = (Mat_<float>) (1/9 * h1);
-    float * h1p = (float *) h1.data;
-    for (int i=0; i<h1.rows; i++) {
-        for (int j=0; j<h1.rows; j++) {
-            *h1p++ = (float) 1/9;
+        if (strcmp(argv[i], "-specific_stage_nw") == 0) {
+            data_smoothing_workers = atoi(argv[i+1]);
+            stream_smoothing_workers = atoi(argv[i+2]);
+            stream_cc_workers = atoi(argv[i+3]);
+        }
+        if (strcmp(argv[i], "-help") == 0) {
+            print_usage(argv[0]);
+            return 0;
+        }
+        if (strcmp(argv[i], "-nw") == 0) {
+            nw = atoi(argv[i + 1]);
         }
     }
 
+    // Creation of the name of the file to write the results to
+    string program_name = argv[0];
+    program_name = program_name.substr(2, program_name.length()-1);
+    // Name of the video
+    string filename = argv[1];
+    string output_file = "results/" + filename.substr(filename.find('/')+1, filename.length() - filename.find('/')-(filename.length() - filename.find('.')) - 1) + ".txt";
+    // Percent of different pixels needed to detect a movement in a frame
+    int k = atoi(argv[2]); 
+    float percent = (float) k / 100;
+    // Number of video frames
     int frame_number = 0;
+
+    // Split the workers
+    if (nw > 0) {
+        if (nw > 3 && nw <= 8) {
+            stream_cc_workers = 2;
+            data_smoothing_workers = 1;
+            stream_smoothing_workers = nw-2;
+        }
+        else if (nw > 8 && nw <= 16) {
+            stream_cc_workers = 4;
+            data_smoothing_workers = 2;
+            int r = nw - stream_cc_workers;
+            stream_smoothing_workers =  r / 2;
+        }
+        else if (nw > 16 && nw <= 24) {
+            data_smoothing_workers = 3;
+            stream_cc_workers = 3;      
+            int r = nw - stream_cc_workers;  
+            stream_smoothing_workers = r / 3;
+        }
+        else if (nw > 24) {
+            data_smoothing_workers = 4;
+            stream_cc_workers = (nw - 4)/4; 
+            int r = nw - stream_cc_workers;  
+            stream_smoothing_workers = r / 4;
+        }
+        int rest = nw - (data_smoothing_workers*stream_smoothing_workers) - stream_cc_workers;
+        if (rest > 0) stream_cc_workers += rest;
+    }
+    else nw = (data_smoothing_workers * stream_smoothing_workers) + stream_cc_workers;
+
+    cout << "Native C++ threads implementation" << endl;
+    cout << "Total threads used: " << (data_smoothing_workers * stream_smoothing_workers) << " for smoothing and " << stream_cc_workers << " for background subtraction and grayscale conversion" << endl; 
+
+    VideoCapture cap(filename);
 
     // The first frame is taken as background image
     Mat background;
@@ -102,24 +122,24 @@ int main(int argc, char * argv[]) {
     // Greyscale conversion and smoothing
     GreyscaleConverter * converter = new GreyscaleConverter(show, times);
     background = converter->convert_to_greyscale(background);
-    Smoother * smoother = new Smoother(h1, data_smoothing_workers, show, times);
-    background = smoother->smoothing(background);
     // Compute the average intensity to establish a threshold for background subtraction
     float avg_intensity = converter->get_avg_intensity(background);
+    Smoother * smoother = new Smoother(data_smoothing_workers, show, times);
+    background = smoother->smoothing(background);
     // Threshold to exceed to consider two pixels different
     float threshold = (float) avg_intensity / 10;
     
-    //threshold = 0;
     cout << "Frames resolution: " << background.rows << "x" << background.cols << endl;
     cout << "Background average intensity: " << avg_intensity << endl;
     cout << "Threshold is: " << threshold << endl;
 
-    // Create and start the thread_pool
+    // Creation of the comparer
     Comparer * comparer = new Comparer(background, threshold, show, times);
-    ThreadPool pool(smoother, converter, comparer, h1, stream_comparer_workers, stream_smoothing_workers, background, threshold, percent, show, times);
+    // Create and start the thread_pool
+    ThreadPool pool(smoother, converter, comparer, stream_cc_workers, stream_smoothing_workers, background, threshold, percent, show, times);
     pool.start_pool();
 
-    // Loop that performs the actions until the last frame of the video
+    // Loop that reads frames of video
     while (true) {
 
         // Get the frame
@@ -131,10 +151,13 @@ int main(int argc, char * argv[]) {
         // Submit the frame to be converted to greyscale
         pool.submit_conversion_task(frame);
 
+        // Increment the number of total frames
         frame_number++;
 
     }
 
+    cap.release();
+    // Communicate the frames number to the thread pool
     pool.communicate_frames_number(frame_number);
 
     // Wait that all the threads of the pool exited and get the number of frames with movement detected

@@ -8,46 +8,6 @@ using namespace std;
 using namespace cv;
 
 /**
- * @brief Multiply two matrixes pixel per pixel
- *
- * @param a Mat to multiply
- * @param b Mat to multiply
- * @return A matrix where the pixel i,j is the multiplication of pixel i,j of a and pixel i,j of b.
- */
-Mat pixel_mul(Mat a, Mat b) {
-    Mat res = Mat(a.rows, a.cols, CV_32F);
-    float * pa = (float *) a.data;
-    float * pb = (float *) b.data;
-    float * pres = (float *) res.data;
-    for(int i=0; i<a.rows; i++) {
-        for (int j=0; j<a.cols; j++) {
-            pres[i * a.cols + j] = pa[i * a.cols + j] * pb[i * a.cols + j];
-        }
-    }
-    return res;
-}
-
-/**
- * @brief Computes a pixel of the matrix with filter applied.
- * 
- * @param sub matrix to apply the filter to
- * @param filter filter matrix
- * @return The central pixel of the matrix with filter applied.
- */
-float smoothing_px(Mat sub, Mat filter) {
-    //Mat mul = sub.mul(h1);
-    Mat mul = pixel_mul(sub, filter);
-    float * p = (float *) mul.data;
-    float res = 0;
-    for(int i=0; i<mul.rows; i++) {
-        for (int j=0; j<mul.cols; j++) {
-            res += p[i * mul.cols + j];
-        }
-    }
-    return res;
-}
-
-/**
  * @brief Performs smoothing of a matrix given a filter.
  * 
  * @param m matrix to filter
@@ -56,18 +16,23 @@ float smoothing_px(Mat sub, Mat filter) {
  * @param times flag to show the execution time
  * @return The matrix m with smoothing filter applied
  */
-Mat smoothing(Mat m, Mat filter, bool show) {
-    Mat res = Mat(m.rows, m.cols, CV_32F);
+Mat smoothing(Mat m, bool show) {
+    Mat res = Mat(m.rows, m.cols, CV_32F, 0.0);
     float * gp = (float *) m.data;
     float * mp = (float *) res.data;
     for(int i=0; i<m.rows; i++) {
         for (int j=0; j<m.cols; j++) { 
-            // Create a rectangle with the bounds of the submatrix 3x3
-            cv::Rect r(j-1, i-1, 3, 3);
-            // Check that the bounds don't exceed the matrix bounds
-            if (r.x >= 0 && r.y >= 0 && r.x + r.width < m.cols && r.y + r.height < m.rows) {
-                Mat submatrix = m(r);
-                mp[i * res.cols + j] = smoothing_px(submatrix, filter);
+            int x = j-1;
+            int y = i-1;
+            int width = 3;
+            int height = 3;
+            if (x >= 0 && y >= 0 && x + width < m.cols && y + height < m.rows) {
+                for(int z=y; z<y+height; z++) {
+                    for (int k=x; k<x+width; k++) {
+                        mp[i * res.cols + j] = mp[i * res.cols + j] + (float) (gp[z * m.cols + k] / 9);
+                        //res.at<float>(i,j) = res.at<float>(i,j) + (float) (m.at<float>(z,k)/9);
+                    }
+                }
             }
             else {
                 mp[i * res.cols + j] = gp[i * res.cols + j];
@@ -123,26 +88,30 @@ Mat greyscale_conversion(Mat frame, bool show) {
  * @return the fraction of different pixels between the background and the actual frame over the total
  */
 float different_pixels(Mat frame, Mat back, float threshold, bool show) {
-    
     int cnt = 0;
-    Mat res = Mat(frame.rows, frame.cols, CV_32F);
     float * pa = (float *) frame.data;
     float * pb = (float *) back.data;
-    float * pres = (float *) res.data;
     for(int i=0; i<frame.rows; i++) {
         for (int j=0; j<frame.cols; j++) {
-            pres[i * frame.cols + j] = abs(pb[i * frame.cols + j] - pa[i * frame.cols + j]);
-            if (pres[i * frame.cols + j] > threshold) cnt++;
+            float difference = (float) abs(pb[i * frame.cols + j] - pa[i * frame.cols + j]);
+            pa[i * frame.cols + j] = difference;
+            if (difference > threshold) cnt++;
         }
     }
     if (show) {
-        imshow("Background subtraction", res);
+        imshow("Background subtraction", frame);
         waitKey(25);
     }
     float diff_fraction = (float) cnt / frame.total();
     return diff_fraction;
 }
 
+/**
+ * @brief Get the avg time of the times stored in a vector
+ * 
+ * @param usecs vector that stores the times
+ * @return auto average value
+ */
 auto get_avg_time(vector<chrono::microseconds> usecs) {
     int size = usecs.size();
     chrono::microseconds sum = 0ms;
@@ -152,49 +121,61 @@ auto get_avg_time(vector<chrono::microseconds> usecs) {
     return (chrono::microseconds) sum/size;
 }
 
+/**
+ * @brief Print how to use the program
+ * 
+ * @param prog the name of the program
+ */
+void print_usage(string prog) {
+    cout << "Basic usage is " << prog << " filename k" << endl;
+    cout << "Options are: \n" <<
+    "-info: shows times information \n" <<
+    "-show: shows results frames for each stage \n"
+    << endl;
+}
+
 // Sequential pattern
 int main(int argc, char * argv[]) {
 
     auto complessive_time_start = std::chrono::high_resolution_clock::now();
 
-    // Parsing of the program arguments
     if (argc == 1) {
-        cout << "Usage is " << argv[0] << " filename k" << endl;
+        print_usage(argv[0]);
         return 0;
     }
+    // flag to show result frames for each phase
     bool show = false;
+    // flag to show the time for each phase
     bool times = false;
+    // Creation of the name of the file to write the results to
     string program_name = argv[0];
     program_name = program_name.substr(2, program_name.length()-1);
+    // Name of the video
     string filename = argv[1];
     string output_file = "results/" + filename.substr(filename.find('/')+1, filename.length() - filename.find('/')-(filename.length() - filename.find('.')) - 1) + ".txt";
+    
+    // Options parsing
     for (int i=1; i<argc; i++) {
-        if (strcmp(argv[i],"-output_file") == 0) output_file = argv[i+1];
         if (strcmp(argv[i], "-show") == 0) show = true;
         if (strcmp(argv[i], "-info") == 0) times = true;
+        if (strcmp(argv[i], "-help") == 0) {
+            print_usage(argv[0]);
+            return 0;
+        }
     }
-    VideoCapture cap(filename);
+    // Percent of different pixels needed to detect a movement in a frame
     int k = atoi(argv[2]); // k for accuracy then
     float percent = (float) k / 100; // percentage of different pixels to esceed to detect a movement
 
     cout << "Sequential implementation" << endl;
-
-    // Filter matrix for smoothing
-    Mat h1 = Mat::ones(3, 3, CV_32F);
-    // For smoothing it is used average filtering
-    h1 = (Mat_<float>) (1/9 * h1);
-    float * h1p = (float *) h1.data;
-    for (int i=0; i<h1.rows; i++) {
-        for (int j=0; j<h1.rows; j++) {
-            *h1p++ = (float) 1/9;
-        }
-    }
+    VideoCapture cap(filename);
 
     int frame_number = 0;
     int different_frames = 0;
     // Threshold to exceed to consider two pixels different
     float threshold = 0;
 
+    // Vectors to save the execution time for each phase and compute the average values at the end
     vector<chrono::microseconds> gr_usecs; 
     vector<chrono::microseconds> sm_usecs; 
     vector<chrono::microseconds> cmp_usecs; 
@@ -202,7 +183,9 @@ int main(int argc, char * argv[]) {
     // The first frame is used as background image
     Mat background; 
 
+    // Read the frames from the video and perform the actions
     while(true) {
+
         Mat frame; 
         cap >> frame;
         if (frame.empty()) break;
@@ -218,7 +201,7 @@ int main(int argc, char * argv[]) {
         
         // Smoothing
         start = std::chrono::high_resolution_clock::now();
-        frame = smoothing(frame, h1, show);
+        frame = smoothing(frame, show);
         duration = std::chrono::high_resolution_clock::now() - start;
         usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
         sm_usecs.push_back(chrono::microseconds(usec));
@@ -250,9 +233,12 @@ int main(int argc, char * argv[]) {
             if (times) cout << "Times passed for background subtraction: " << usec << " usec" << endl;
             cout << "Frames with movement detected until now: " << different_frames << " over " << frame_number << " analyzed" << endl;
         }
+        // Increment the number of total frames
         frame_number++;
     }
+
     cap.release();
+
     auto complessive_duration = std::chrono::high_resolution_clock::now() - complessive_time_start;
     auto complessive_usec = std::chrono::duration_cast<std::chrono::microseconds>(complessive_duration).count();
 
@@ -262,6 +248,7 @@ int main(int argc, char * argv[]) {
     cout << "Average time spent for background subtraction: " << get_avg_time(cmp_usecs).count() << endl;
     cout << "Total time passed: " << complessive_usec << endl;
     
+    // Write the results in a file
     FileWriter fw(output_file);
     string time = to_string(complessive_usec);
     fw.print_results(filename, program_name, k, -1, show, time, different_frames);

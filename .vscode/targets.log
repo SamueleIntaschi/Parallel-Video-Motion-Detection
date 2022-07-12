@@ -8,7 +8,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Tue Jul 05 23:27:52 2022
+# Make data base, printed on Tue Jul 12 14:29:29 2022
 
 # Variables
 
@@ -24,8 +24,6 @@ LC_ALL = C
 USERPROFILE = C:\Users\sam18
 # environment
 LOCALAPPDATA = C:\Users\sam18\AppData\Local
-# environment
-VSCODE_IPC_HOOK_EXTHOST = \\.\pipe\vscode-ipc-8e5bc52d-ed57-4b5c-91d7-1fd9e5b711c7-sock
 # environment
 VSCODE_CWD = C:\Users\sam18\AppData\Local\Programs\Microsoft VS Code
 # environment
@@ -43,7 +41,7 @@ GOPATH = C:\Users\sam18\go
 # automatic
 @D = $(patsubst %/,%,$(patsubst %\,%,$(dir $@)))
 # environment
-CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_13512_BNTRJABZEBSVCOED
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_18632_OQDMPKWKPRDUJBDB
 # environment
 FPS_BROWSER_USER_PROFILE_STRING = Default
 # environment
@@ -54,12 +52,10 @@ VSCODE_HANDLES_UNCAUGHT_ERRORS = true
 %D = $(patsubst %/,%,$(patsubst %\,%,$(dir $%)))
 # automatic
 ^D = $(patsubst %/,%,$(patsubst %\,%,$(dir $^)))
-# environment
-VSCODE_LOG_STACK = false
 # automatic
 %F = $(notdir $%)
 # environment
-VSCODE_CODE_CACHE_PATH = C:\Users\sam18\AppData\Roaming\Code\CachedData\30d9c6cd9483b2cc586687151bcbcd635f373630
+VSCODE_CODE_CACHE_PATH = C:\Users\sam18\AppData\Roaming\Code\CachedData\92d25e35d9bf1a6b16f7d0758f25d48ace11e5b9
 # environment
 LANG = C
 # default
@@ -76,8 +72,6 @@ MAKEFLAGS = pqrR
 ONEDRIVE = C:\Users\sam18\OneDrive
 # makefile
 CURDIR := c:/Users/sam18/Documents/Parallel and Distributed Systems/Parallel-Video-Motion-Detection
-# environment
-VSCODE_PIPE_LOGGING = true
 # environment
 APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
 # automatic
@@ -97,9 +91,7 @@ MAKEFILE_LIST := Makefile
 # automatic
 @F = $(notdir $@)
 # environment
-VSCODE_VERBOSE_LOGGING = true
-# environment
-VSCODE_PID = 13512
+VSCODE_PID = 18632
 # automatic
 ?D = $(patsubst %/,%,$(patsubst %\,%,$(dir $?)))
 # automatic
@@ -107,7 +99,7 @@ VSCODE_PID = 13512
 # automatic
 <D = $(patsubst %/,%,$(patsubst %\,%,$(dir $<)))
 # environment
-VSCODE_NLS_CONFIG = {"locale":"it","availableLanguages":{"*":"it"},"_languagePackId":"e42d83a2243fefd704ae12d65a4126f2.it","_translationsConfigFile":"C:\\Users\\sam18\\AppData\\Roaming\\Code\\clp\\e42d83a2243fefd704ae12d65a4126f2.it\\tcf.json","_cacheRoot":"C:\\Users\\sam18\\AppData\\Roaming\\Code\\clp\\e42d83a2243fefd704ae12d65a4126f2.it","_resolvedLanguagePackCoreLocation":"C:\\Users\\sam18\\AppData\\Roaming\\Code\\clp\\e42d83a2243fefd704ae12d65a4126f2.it\\30d9c6cd9483b2cc586687151bcbcd635f373630","_corruptedFile":"C:\\Users\\sam18\\AppData\\Roaming\\Code\\clp\\e42d83a2243fefd704ae12d65a4126f2.it\\corrupted.info","_languagePackSupport":true}
+VSCODE_NLS_CONFIG = {"locale":"it","availableLanguages":{"*":"it"},"_languagePackId":"c214013558c0237a1b875ec703f18888.it","_translationsConfigFile":"C:\\Users\\sam18\\AppData\\Roaming\\Code\\clp\\c214013558c0237a1b875ec703f18888.it\\tcf.json","_cacheRoot":"C:\\Users\\sam18\\AppData\\Roaming\\Code\\clp\\c214013558c0237a1b875ec703f18888.it","_resolvedLanguagePackCoreLocation":"C:\\Users\\sam18\\AppData\\Roaming\\Code\\clp\\c214013558c0237a1b875ec703f18888.it\\92d25e35d9bf1a6b16f7d0758f25d48ace11e5b9","_corruptedFile":"C:\\Users\\sam18\\AppData\\Roaming\\Code\\clp\\c214013558c0237a1b875ec703f18888.it\\corrupted.info","_languagePackSupport":true}
 # default
 MAKE_HOST := Windows32
 # environment
@@ -143,8 +135,6 @@ CHOCOLATEYLASTPATHUPDATE = 132620065957541971
 # environment
 LOGONSERVER = \\LAPTOP-BBP13F61
 # environment
-VSCODE_LOG_NATIVE = false
-# environment
 USERNAME = sam18
 # environment
 COMMONPROGRAMFILES = C:\Program Files (x86)\Common Files
@@ -177,7 +167,7 @@ MAKE_VERSION := 4.3
 # environment
 PROGRAMFILES(X86) = C:\Program Files (x86)
 # makefile (from 'Makefile', line 3)
-LDFLAGS = -pthread -O3 `pkg-config --cflags opencv4` `pkg-config --libs opencv4`
+LDFLAGS = -pthread -O3 -ftree-vectorize `pkg-config --cflags opencv4` `pkg-config --libs opencv4`
 # environment
 USERDOMAIN_ROAMINGPROFILE = LAPTOP-BBP13F61
 # environment
@@ -199,7 +189,7 @@ ELECTRON_RUN_AS_NODE = 1
 # environment
 TEMP = C:\Users\sam18\AppData\Local\Temp
 # environment
-VSCODE_IPC_HOOK = \\.\pipe\fc10ea21ab8dcaca85e06cc54c95f47e-1.68.1-main-sock
+VSCODE_IPC_HOOK = \\.\pipe\fc10ea21ab8dcaca85e06cc54c95f47e-1.69.0-main-sock
 # default
 .RECIPEPREFIX := 
 # automatic
@@ -223,7 +213,7 @@ CXX = g++
 # environment
 PROCESSOR_IDENTIFIER = AMD64 Family 23 Model 96 Stepping 1, AuthenticAMD
 # variable set hash-table stats:
-# Load=105/1024=10%, Rehash=0, Collisions=9/132=7%
+# Load=100/1024=10%, Rehash=0, Collisions=8/127=6%
 
 # Pattern-specific Variable Values
 
@@ -231,7 +221,7 @@ PROCESSOR_IDENTIFIER = AMD64 Family 23 Model 96 Stepping 1, AuthenticAMD
 
 # Directories
 
-# . (key c:/Users/sam18/Documents/Parallel and Distributed Systems/Parallel-Video-Motion-Detection, mtime 1657038919): 15 files, no impossibilities.
+# . (key c:/Users/sam18/Documents/Parallel and Distributed Systems/Parallel-Video-Motion-Detection, mtime 1657625509): 15 files, no impossibilities.
 
 # 15 files, no impossibilities in 1 directories.
 
@@ -270,7 +260,7 @@ results.cpp:
 # Not a target:
 Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2022-07-05 14:53:13
+#  Last modified 2022-07-07 17:31:23
 #  File has been updated.
 #  Successfully updated.
 
@@ -341,6 +331,6 @@ nt: nthreads.cpp
 # strcache performance: lookups = 39 / hit rate = 41%
 # hash-table stats:
 # Load=23/8192=0%, Rehash=0, Collisions=2/39=5%
-# Finished Make data base on Tue Jul 05 23:27:52 2022
+# Finished Make data base on Tue Jul 12 14:29:29 2022
 
  
