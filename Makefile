@@ -7,6 +7,9 @@ EXE = ff seq nt res
 ff: ff.cpp
 	$(CXX) -o ff ff.cpp $(LDFLAGS)
 
+ffboundedbuffer:
+	$(CXX) -DFF_BOUNDED_BUFFER -DDEFAULT_BUFFER_CAPACITY=3 -o ff ff.cpp $(LDFLAGS)
+
 fftrace: ff.cpp
 	$(CXX) -DTRACE_FASTFLOW -o ff ff.cpp $(LDFLAGS)
 

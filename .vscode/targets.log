@@ -8,7 +8,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Tue Jul 12 14:29:29 2022
+# Make data base, printed on Fri Jul 15 20:26:58 2022
 
 # Variables
 
@@ -41,7 +41,7 @@ GOPATH = C:\Users\sam18\go
 # automatic
 @D = $(patsubst %/,%,$(patsubst %\,%,$(dir $@)))
 # environment
-CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_18632_OQDMPKWKPRDUJBDB
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_14864_WSINDUAPMWLRKRRM
 # environment
 FPS_BROWSER_USER_PROFILE_STRING = Default
 # environment
@@ -55,7 +55,7 @@ VSCODE_HANDLES_UNCAUGHT_ERRORS = true
 # automatic
 %F = $(notdir $%)
 # environment
-VSCODE_CODE_CACHE_PATH = C:\Users\sam18\AppData\Roaming\Code\CachedData\92d25e35d9bf1a6b16f7d0758f25d48ace11e5b9
+VSCODE_CODE_CACHE_PATH = C:\Users\sam18\AppData\Roaming\Code\CachedData\b06ae3b2d2dbfe28bca3134cc6be65935cdfea6a
 # environment
 LANG = C
 # default
@@ -91,7 +91,7 @@ MAKEFILE_LIST := Makefile
 # automatic
 @F = $(notdir $@)
 # environment
-VSCODE_PID = 18632
+VSCODE_PID = 14864
 # automatic
 ?D = $(patsubst %/,%,$(patsubst %\,%,$(dir $?)))
 # automatic
@@ -99,7 +99,7 @@ VSCODE_PID = 18632
 # automatic
 <D = $(patsubst %/,%,$(patsubst %\,%,$(dir $<)))
 # environment
-VSCODE_NLS_CONFIG = {"locale":"it","availableLanguages":{"*":"it"},"_languagePackId":"c214013558c0237a1b875ec703f18888.it","_translationsConfigFile":"C:\\Users\\sam18\\AppData\\Roaming\\Code\\clp\\c214013558c0237a1b875ec703f18888.it\\tcf.json","_cacheRoot":"C:\\Users\\sam18\\AppData\\Roaming\\Code\\clp\\c214013558c0237a1b875ec703f18888.it","_resolvedLanguagePackCoreLocation":"C:\\Users\\sam18\\AppData\\Roaming\\Code\\clp\\c214013558c0237a1b875ec703f18888.it\\92d25e35d9bf1a6b16f7d0758f25d48ace11e5b9","_corruptedFile":"C:\\Users\\sam18\\AppData\\Roaming\\Code\\clp\\c214013558c0237a1b875ec703f18888.it\\corrupted.info","_languagePackSupport":true}
+VSCODE_NLS_CONFIG = {"locale":"it","availableLanguages":{"*":"it"},"_languagePackId":"c214013558c0237a1b875ec703f18888.it","_translationsConfigFile":"C:\\Users\\sam18\\AppData\\Roaming\\Code\\clp\\c214013558c0237a1b875ec703f18888.it\\tcf.json","_cacheRoot":"C:\\Users\\sam18\\AppData\\Roaming\\Code\\clp\\c214013558c0237a1b875ec703f18888.it","_resolvedLanguagePackCoreLocation":"C:\\Users\\sam18\\AppData\\Roaming\\Code\\clp\\c214013558c0237a1b875ec703f18888.it\\b06ae3b2d2dbfe28bca3134cc6be65935cdfea6a","_corruptedFile":"C:\\Users\\sam18\\AppData\\Roaming\\Code\\clp\\c214013558c0237a1b875ec703f18888.it\\corrupted.info","_languagePackSupport":true}
 # default
 MAKE_HOST := Windows32
 # environment
@@ -189,7 +189,7 @@ ELECTRON_RUN_AS_NODE = 1
 # environment
 TEMP = C:\Users\sam18\AppData\Local\Temp
 # environment
-VSCODE_IPC_HOOK = \\.\pipe\fc10ea21ab8dcaca85e06cc54c95f47e-1.69.0-main-sock
+VSCODE_IPC_HOOK = \\.\pipe\fc10ea21ab8dcaca85e06cc54c95f47e-1.69.1-main-sock
 # default
 .RECIPEPREFIX := 
 # automatic
@@ -221,9 +221,9 @@ PROCESSOR_IDENTIFIER = AMD64 Family 23 Model 96 Stepping 1, AuthenticAMD
 
 # Directories
 
-# . (key c:/Users/sam18/Documents/Parallel and Distributed Systems/Parallel-Video-Motion-Detection, mtime 1657625509): 15 files, no impossibilities.
+# . (key c:/Users/sam18/Documents/Parallel and Distributed Systems/Parallel-Video-Motion-Detection, mtime 1657909391): 14 files, no impossibilities.
 
-# 15 files, no impossibilities in 1 directories.
+# 14 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -241,8 +241,15 @@ fftrace: ff.cpp
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from 'Makefile', line 11):
+#  recipe to execute (from 'Makefile', line 14):
 	$(CXX) -DTRACE_FASTFLOW -o ff ff.cpp $(LDFLAGS)
+
+ffboundedbuffer:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 11):
+	$(CXX) -DFF_BOUNDED_BUFFER -DDEFAULT_BUFFER_CAPACITY=3 -o ff ff.cpp $(LDFLAGS)
 
 ff: ff.cpp
 #  Implicit rule search has not been done.
@@ -260,7 +267,7 @@ results.cpp:
 # Not a target:
 Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2022-07-07 17:31:23
+#  Last modified 2022-07-15 20:26:56
 #  File has been updated.
 #  Successfully updated.
 
@@ -268,7 +275,7 @@ clean:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from 'Makefile', line 23):
+#  recipe to execute (from 'Makefile', line 26):
 	rm $(EXE)
 
 # Not a target:
@@ -287,21 +294,22 @@ all:
 # Not a target:
 ff.cpp:
 #  Implicit rule search has not been done.
-#  Modification time never checked.
+#  Modification time never ch 
+ecked.
 #  File has not been updated.
 
 seq: sequential.cpp
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from 'Makefile', line 17):
+#  recipe to execute (from 'Makefile', line 20):
 	$(CXX) -o seq sequential.cpp $(LDFLAGS)
 
 res: results.cpp
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from 'Makefile', line 20):
+#  recipe to execute (from 'Makefile', line 23):
 	$(CXX) -o res results.cpp
 
 # Not a target:
@@ -314,23 +322,23 @@ nt: nthreads.cpp
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from 'Makefile', line 14):
+#  recipe to execute (from 'Makefile', line 17):
 	$(CXX) -o nt nthreads.cpp $(LDFLAGS)
 
 # files hash-table stats:
-# Load=14/1024=1%, Rehash=0, Collisions=0/29=0%
+# Load=15/1024=1%, Rehash=0, Collisions=0/30=0%
 # VPATH Search Paths
 
 # No 'vpath' search paths.
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 23 / storage = 166 B / avg = 7 B
-# current buf: size = 8174 B / used = 166 B / count = 23 / avg = 7 B
+# strcache buffers: 1 (0) / strings = 24 / storage = 182 B / avg = 7 B
+# current buf: size = 8174 B / used = 182 B / count = 24 / avg = 7 B
 
-# strcache performance: lookups = 39 / hit rate = 41%
+# strcache performance: lookups = 40 / hit rate = 40%
 # hash-table stats:
-# Load=23/8192=0%, Rehash=0, Collisions=2/39=5%
-# Finished Make data base on Tue Jul 12 14:29:29 2022
+# Load=24/8192=0%, Rehash=0, Collisions=2/40=5%
+# Finished Make data base on Fri Jul 15 20:26:58 2022
 
  
