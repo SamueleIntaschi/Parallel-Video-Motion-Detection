@@ -1,8 +1,8 @@
 Videos/
 .vscode/
-results/
+results/*.txt
 *backup*
 seq
 native
 ff
-show.cpp
+res
