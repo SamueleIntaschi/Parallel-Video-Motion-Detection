@@ -1,7 +1,6 @@
 #include <iostream>
 #include "opencv2/opencv.hpp"
 #include <ff/ff.hpp>
-#include <ff/parallel_for.hpp>
 
 using namespace ff;
 using namespace std;
@@ -13,17 +12,18 @@ using namespace cv;
  *        is a movement in the frame
  * 
  */
-class Collector: public ff_minode_t<float> {
+class Sink: public ff_minode_t<float> {
     private:
         int frames_with_movement = 0;
         int frame_number = 0;
         float percent;
         bool has_finished = false;
+        bool times;
 
 
     public:
 
-        Collector(float percent): percent(percent) {}
+        Sink(float percent, bool times): percent(percent), times(times) {}
 
         /**
          * @brief Main function of the node
@@ -37,7 +37,7 @@ class Collector: public ff_minode_t<float> {
             // Delete the number when it has been analyzed
             delete diff;
             (this -> frame_number)++;
-            cout << "Frames with movement detected until now: " << frames_with_movement << " over " << frame_number << " analyzed" << endl;
+            if (times) cout << "Frames with movement detected until now: " << frames_with_movement << " over " << frame_number << " analyzed" << endl;
             return GO_ON;
         }
 
@@ -59,7 +59,5 @@ class Collector: public ff_minode_t<float> {
             if (this -> has_finished) return this->frames_with_movement;
             else return -1;
         }
-
-
 
 };

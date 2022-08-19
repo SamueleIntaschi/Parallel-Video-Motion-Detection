@@ -34,15 +34,15 @@ class Comparer {
          * 
          * @return the fraction of different pixels between the background and the actual frame over the total
          */
-        float different_pixels(Mat frame) {
+        float different_pixels(Mat * frame) {
             auto start = std::chrono::high_resolution_clock::now();
             int cnt = 0;
-            float * pa = (float *) frame.data;
+            float * pa = (float *) frame->data;
             float * pb = (float *) (this->background).data;
-            for(int i=0; i<frame.rows; i++) {
-                for (int j=0; j<frame.cols; j++) {
-                    float difference = (float) abs(pb[i * frame.cols + j] - pa[i * frame.cols + j]);
-                    pa[i * frame.cols + j] = difference;
+            for(int i=0; i<frame->rows; i++) {
+                for (int j=0; j<frame->cols; j++) {
+                    float difference = (float) abs(pb[i * frame->cols + j] - pa[i * frame->cols + j]);
+                    pa[i * frame->cols + j] = difference;
                     if (difference > threshold) cnt++;
                 }
             }
@@ -52,10 +52,11 @@ class Comparer {
                 cout << "Time spent for background subtraction: " << usec << " usec" << endl;
             }
             if (show) {
-                imshow("Background subtraction", frame);
+                imshow("Background subtraction", *frame);
                 waitKey(25);
             }
-            float diff_fraction = (float) cnt / frame.total();
+            float diff_fraction = (float) cnt / frame->total();
+            delete frame; 
             return diff_fraction;
         }
 };

@@ -1,17 +1,13 @@
 #include <iostream>
 #include "opencv2/opencv.hpp"
-#include <thread>
-#include <chrono> 
-#include <atomic>
-#include <queue>
-#include <mutex>
-#include <vector>
-#include <ctime>
-#include "src/nthreads/thread_pool.hpp"
 #include "src/utils/file_writer.hpp"
 #include "src/utils/seq_smoother.hpp" // sequential implementation used for background preparation
-#include "src/utils/seq_greyscale_converter.hpp"
+#include "src/utils/seq_greyscale_converter.hpp" // sequential implementation used for background preparation
+#include "src/fastflow/ff_source.hpp"
+#include "src/fastflow/ff_sink.hpp"
+#include "src/fastflow/ff_farm_worker.hpp"
 
+using namespace ff;
 using namespace std;
 using namespace cv;
 
@@ -25,31 +21,31 @@ void print_usage(string prog) {
     cout << "Options are: \n" <<
     "-info: shows times information \n" <<
     "-show: shows results frames for each stage \n" <<
-    "-specific_stage_nw data_smoothing_workers stream_smoothing_workers stream_converter_comparer_workers: specifies the number of threads to use for each phase\n"
+    "-specific_stage_nw data_smoothing_converter_workers stream_smoothing_converter_workers stream_comparer_workers: specifies the number of threads to use for each phase\n"
     << endl;
 }
 
-// Native C++ threads implementation
-int main(int argc, char * argv[]) {
 
+// FastFlow implementation
+int main(int argc, char * argv[]) {
+    
     auto complessive_time_start = std::chrono::high_resolution_clock::now();
 
     if (argc == 1) {
         print_usage(argv[0]);
         return 0;
     }
+    // total number of workers used
     int nw = 1;
     // flag to show result frames for each phase
     bool show = false;
     // flag to show the time for each phase
     bool times = false;
-    bool mapping = true;
 
     // Options parsing
     for (int i=1; i<argc; i++) {
         if (strcmp(argv[i], "-show") == 0) show = true;
         if (strcmp(argv[i], "-info") == 0) times = true;
-        if (strcmp(argv[i], "-no_mapping") == 0) mapping = false;
         if (strcmp(argv[i], "-help") == 0) {
             print_usage(argv[0]);
             return 0;
@@ -67,73 +63,68 @@ int main(int argc, char * argv[]) {
     string filename = argv[1];
     string output_file = "results/" + filename.substr(filename.find('/')+1, filename.length() - filename.find('/')-(filename.length() - filename.find('.')) - 1) + ".txt";
     // Percent of different pixels needed to detect a movement in a frame
-    int k = atoi(argv[2]); 
+    int k = atoi(argv[2]); // k for accuracy then
     float percent = (float) k / 100;
-    // Number of video frames
-    int frame_number = 0;
 
-    cout << "Native C++ threads implementation" << endl;
+    cout << "FastFlow Farm implementation" << endl;
     cout << "Total threads used: " << nw << endl; 
 
     VideoCapture cap(filename);
 
-    // The first frame is taken as background image
-    Mat background;
+    // Take first frame as background
+    Mat background; 
     cap >> background;
     if (background.empty()) return 0;
     background.convertTo(background, CV_32F, 1.0/255.0);
-    // Greyscale conversion and smoothing
-    GreyscaleConverter * converter = new GreyscaleConverter(show, times);
-    GreyscaleConverterSeq converterseq(show, times);
-    background = converterseq.convert_to_greyscale(background);
-    // Compute the average intensity to establish a threshold for background subtraction
-    float avg_intensity = converter->get_avg_intensity(background);
-    Smoother * smoother = new Smoother(show, times);
+    // Greyscale conversion for the background
+    GreyscaleConverterSeq converter(show, times);
+    background = converter.convert_to_greyscale(background);
+    // Smoothing of the background
     SmootherSeq s(background, show, times);
     background = s.smoothing();
+    // Compute the average intensity to establish a threshold for background subtraction
+    float avg_intensity = converter.get_avg_intensity(background);
     // Threshold to exceed to consider two pixels different
     float threshold = (float) avg_intensity / 10;
     
-    cout << "Frames resolution: " << background.rows << "x" << background.cols << endl;
+    cout << "Frames resolution: " << background.rows << " x " << background.cols << endl;
     cout << "Background average intensity: " << avg_intensity << endl;
     cout << "Threshold is: " << threshold << endl;
 
-    // Creation of the comparer
-    Comparer * comparer = new Comparer(background, threshold, show, times);
-    // Create and start the thread_pool
-    ThreadPool pool(smoother, converter, comparer, nw, background, threshold, percent, show, times, mapping);
-    pool.start_pool();
-
-    // Loop that reads frames of video
-    while (true) {
-        // Get the frame
-        Mat * frame = new Mat(background.rows, background.cols, CV_32FC3);
-        cap >> *frame;
-        if (frame->empty()) break;
-        frame->convertTo(*frame, CV_32F, 1.0/255.0);
-        // Increment the number of total frames
-        frame_number++;   
-        // Submit the frame to be converted to greyscale
-        pool.submit_conversion_task(frame, frame_number);
+    // Creation of the emitter
+    Source * emitter = new Source(background, cap, show, times);
+    // Creation of the collector
+    Sink * collector = new Sink(percent, times);
+    vector<std::unique_ptr<ff_node>> farm_workers;
+    for(int i=0;i<nw;++i){
+        farm_workers.push_back(make_unique<FarmWorker>(background, threshold, show, times));
     }
+    ff_Farm<Mat, float> farm(move(farm_workers));
+    farm.add_emitter(*emitter);
+    farm.add_collector(*collector);
+    farm.set_scheduling_ondemand();
+    if (farm.run_and_wait_end() < 0) cout << "fastflow error" << endl;
+        
+    // When the pipe has finished get the final result from the collector
+    int different_frames = collector->get_different_frames_number();
 
-    cap.release();
-    // Communicate the frames number to the thread pool
-    pool.communicate_frames_number(frame_number);
-
-    // Wait that all the threads of the pool exited and get the number of frames with movement detected
-    int different_frames = pool.get_final_result();
-
-    cout << "Number of frames with movement detected: " << different_frames << " on a total of " << frame_number << " frames" << endl;
-    auto complessive_time_end = std::chrono::high_resolution_clock::now();
     auto complessive_duration = std::chrono::high_resolution_clock::now() - complessive_time_start;
     auto complessive_usec = std::chrono::duration_cast<std::chrono::microseconds>(complessive_duration).count();
-    cout << "Total time spent: " << complessive_usec << endl;
-    
-    // Write the results on a file
+
+    cout << "Total time passed: " << complessive_usec << endl;
+
+    // Print the stats if the program is compiled with -DTRACE_FASTFLOW and the flag -info is specified
+    if (times) {
+        farm.ffStats(cout);
+    }
+
+    delete collector;
+    delete emitter;
+
+    // Write the output in a file
     FileWriter fw(output_file);
     string time = to_string(complessive_usec);
     fw.print_results(filename, program_name, k, nw, show, time, different_frames);
-    
+
     return 0;
 };

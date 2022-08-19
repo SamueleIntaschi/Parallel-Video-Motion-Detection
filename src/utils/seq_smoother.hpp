@@ -11,14 +11,14 @@
 using namespace std;
 using namespace cv;
 
-class Smoother {
+class SmootherSeq {
     private:
         Mat m;
         bool show = false;
         bool times = false;
 
     public:
-        Smoother(Mat m, bool show, bool times): m(m), show(show), times(times) {}
+        SmootherSeq(Mat m, bool show, bool times): m(m), show(show), times(times) {}
 
         /**
          * @brief Performs smoothing of a matrix given a filter.

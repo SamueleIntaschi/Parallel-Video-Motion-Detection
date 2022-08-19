@@ -231,7 +231,7 @@ int main(int argc, char * argv[]) {
             usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
             cmp_usecs.push_back(chrono::microseconds(usec));
             if (times) cout << "Times passed for background subtraction: " << usec << " usec" << endl;
-            cout << "Frames with movement detected until now: " << different_frames << " over " << frame_number << " analyzed" << endl;
+            if (times) cout << "Frames with movement detected until now: " << different_frames << " over " << frame_number << " analyzed" << endl;
         }
         // Increment the number of total frames
         frame_number++;

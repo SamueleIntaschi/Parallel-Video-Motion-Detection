@@ -32,7 +32,8 @@ int main(int argc, char * argv[]) {
 
         for (int i=nw0; i<=nw1; i++) {
             string command1 = "./nt Videos/people1.mp4 12 -nw " + to_string(i);
-            string command2 = "./ff Videos/people1.mp4 12 -nw " + to_string(i);
+            string command2 = "./ffmw Videos/people1.mp4 12 -nw " + to_string(i);
+            string command3 = "./fffarm Videos/people1.mp4 12 -nw " + to_string(i);
             system(command1.c_str());
             system(command2.c_str());
         }
@@ -52,9 +53,11 @@ int main(int argc, char * argv[]) {
 
         for (int i=nw0; i<=nw1; i++) {
             string command1 = "./nt " +  filename + " " + to_string(percent) + " -nw " + to_string(i);
-            string command2 = "./ff " +  filename + " " + to_string(percent) + " -nw " + to_string(i);
+            string command2 = "./ffmw " +  filename + " " + to_string(percent) + " -nw " + to_string(i);
+            string command3 = "./fffarm " +  filename + " " + to_string(percent) + " -nw " + to_string(i);
             system(command1.c_str());
             system(command2.c_str());
+            system(command3.c_str());
         }
     }
 
@@ -72,9 +75,11 @@ int main(int argc, char * argv[]) {
 
         for (int i=0; i<tries; i++) {
             string command1 = "./nt " +  filename + " " + to_string(percent) + " -nw " + to_string(nw0);
-            string command2 = "./ff " +  filename + " " + to_string(percent) + " -nw " + to_string(nw0);
+            string command2 = "./ffmw " +  filename + " " + to_string(percent) + " -nw " + to_string(nw0);
+            string command3 = "./fffarm " +  filename + " " + to_string(percent) + " -nw " + to_string(nw0);
             system(command1.c_str());
             system(command2.c_str());
+            system(command3.c_str());
         }
     } 
 

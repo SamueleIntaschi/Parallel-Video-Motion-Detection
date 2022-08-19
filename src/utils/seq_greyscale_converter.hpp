@@ -15,7 +15,7 @@ using namespace cv;
  * @brief Class that performs greyscale conversion
  * 
  */
-class GreyscaleConverter {
+class GreyscaleConverterSeq {
 
     private:
         bool show = false;
@@ -23,7 +23,7 @@ class GreyscaleConverter {
 
     public:
 
-        GreyscaleConverter(bool show, bool times): show(show), times(times) {}
+        GreyscaleConverterSeq(bool show, bool times): show(show), times(times) {}
 
         /**
          * @brief Get the avg intensity of pixel the black and white matrix
@@ -52,29 +52,28 @@ class GreyscaleConverter {
          * 
          * @return the matrix that represents the frame in greyscale
          */
-        Mat * convert_to_greyscale(Mat * frame) {
+        Mat convert_to_greyscale(Mat frame) {
             auto start = std::chrono::high_resolution_clock::now();
-            Mat * gr = new Mat(frame->rows, frame->cols, CV_32F);
-            float * p = (float *) frame->data;
+            Mat gr = Mat(frame.rows, frame.cols, CV_32F);
+            float * p = (float *) frame.data;
             float r, g, b;
-            float * gp = (float *) gr->data;
-            int channels = frame->channels();
-            for(int i=0; i<frame->rows; i++) {
-                for (int j=0; j<frame->cols; j++) {
-                    r = (float) p[i * frame->cols * channels + j * channels];
-                    g = (float) p[i * frame->cols * channels + j * channels + 1];
-                    b = (float) p[i * frame->cols * channels + j * channels + 2];
-                    gp[i* frame->cols + j ] = (float) (r + g + b) / channels;
+            float * gp = (float *) gr.data;
+            int channels = frame.channels();
+            for(int i=0; i<frame.rows; i++) {
+                for (int j=0; j<frame.cols; j++) {
+                    r = (float) p[i * frame.cols * channels + j * channels];
+                    g = (float) p[i * frame.cols * channels + j * channels + 1];
+                    b = (float) p[i * frame.cols * channels + j * channels + 2];
+                    gp[i* frame.cols + j ] = (float) (r + g + b) / channels;
                 }
             }
-            delete frame;
             if (this->times) {
                 auto duration = std::chrono::high_resolution_clock::now() - start;
                 auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
                 cout << "Times spent to convert to greyscale: " << usec << " usec" << endl;
             }
             if (this->show) {
-                imshow("Frame", *gr);
+                imshow("Frame", gr);
                 waitKey(25);
             }
             return gr;
