@@ -25,7 +25,8 @@ void print_usage(string prog) {
     cout << "Options are: \n" <<
     "-info: shows times information \n" <<
     "-show: shows results frames for each stage \n" <<
-    "-specific_stage_nw data_smoothing_workers stream_smoothing_workers stream_converter_comparer_workers: specifies the number of threads to use for each phase\n"
+    "-nw: specifies the number of workers to use\n"<<
+    "-mapping: threads will be mapped on cores"
     << endl;
 }
 
@@ -43,13 +44,14 @@ int main(int argc, char * argv[]) {
     bool show = false;
     // flag to show the time for each phase
     bool times = false;
-    bool mapping = true;
+    // flag to indicate if each thread must be assigned to a specific core
+    bool mapping = false;
 
     // Options parsing
     for (int i=1; i<argc; i++) {
         if (strcmp(argv[i], "-show") == 0) show = true;
         if (strcmp(argv[i], "-info") == 0) times = true;
-        if (strcmp(argv[i], "-no_mapping") == 0) mapping = false;
+        if (strcmp(argv[i], "-mapping") == 0) mapping = true;
         if (strcmp(argv[i], "-help") == 0) {
             print_usage(argv[0]);
             return 0;

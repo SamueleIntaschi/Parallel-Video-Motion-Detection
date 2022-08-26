@@ -13,7 +13,7 @@ fffarmtrace: fffarm.cpp
 ffmw: ffmw.cpp
 	$(CXX) -DFF_BOUNDED_BUFFER -DDEFAULT_BUFFER_CAPACITY=10 -o ffmw ffmw.cpp $(LDFLAGS)
 
-ffmwtrace: ff.cpp
+ffmwtrace: ffmw.cpp
 	$(CXX) -DTRACE_FASTFLOW -DFF_BOUNDED_BUFFER -DDEFAULT_BUFFER_CAPACITY=10 -o ffmw ffmw.cpp $(LDFLAGS)
 
 nt: nthreads.cpp

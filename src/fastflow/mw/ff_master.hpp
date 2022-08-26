@@ -1,7 +1,7 @@
 #include <iostream>
 #include "opencv2/opencv.hpp"
 #include <ff/ff.hpp>
-#include "../fastflow/ff_worker.hpp"
+#include "../mw//ff_worker.hpp"
 
 using namespace ff;
 using namespace std;
@@ -45,6 +45,11 @@ class Master: public ff_monode_t<Task> {
             return t;
         }
 
+        /**
+         * @brief function executed when EOS is received, it save the information and notify all the workers
+         *        when it is needed
+         * 
+         */
         void eosnotify(ssize_t id) {
             if (!eos_received) {
                 eos_received = true;
