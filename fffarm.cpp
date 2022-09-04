@@ -3,9 +3,9 @@
 #include "src/utils/file_writer.hpp"
 #include "src/utils/seq_smoother.hpp" // sequential implementation used for background preparation
 #include "src/utils/seq_greyscale_converter.hpp" // sequential implementation used for background preparation
-#include "src/fastflow/fffarm/ff_source.hpp"
-#include "src/fastflow/fffarm/ff_sink.hpp"
-#include "src/fastflow/fffarm/ff_farm_worker.hpp"
+#include "src/fastflow/farm/ff_emitter.hpp"
+#include "src/fastflow/farm/ff_collector.hpp"
+#include "src/fastflow/farm/ff_farm_worker.hpp"
 
 using namespace ff;
 using namespace std;
@@ -14,7 +14,7 @@ using namespace cv;
 /**
  * @brief Print how to use the program
  * 
- * @param prog the name of the program
+ * @param prog name of the program
  */
 void print_usage(string prog) {
     cout << "Basic usage is " << prog << " filename k -nw number_of_threads" << endl;
@@ -36,8 +36,8 @@ int main(int argc, char * argv[]) {
         print_usage(argv[0]);
         return 0;
     }
-    // total number of workers used
-    int nw = 1;
+    // 8 threads if the user does not specify a value
+    int nw = 8;
     // flag to show result frames for each phase
     bool show = false;
     // flag to show the time for each phase
@@ -75,7 +75,7 @@ int main(int argc, char * argv[]) {
 
     VideoCapture cap(filename);
 
-    // Take first frame as background
+    // Takes first frame as background
     Mat background; 
     cap >> background;
     if (background.empty()) return 0;
@@ -86,7 +86,7 @@ int main(int argc, char * argv[]) {
     // Smoothing of the background
     SmootherSeq s(background, show, times);
     background = s.smoothing();
-    // Compute the average intensity to establish a threshold for background subtraction
+    // Computes the average intensity to establish a threshold for background subtraction
     float avg_intensity = converter.get_avg_intensity(background);
     // Threshold to exceed to consider two pixels different
     float threshold = (float) avg_intensity / 10;
@@ -95,10 +95,9 @@ int main(int argc, char * argv[]) {
     cout << "Background average intensity: " << avg_intensity << endl;
     cout << "Threshold is: " << threshold << endl;
 
-    // Creation of the emitter
-    Source * emitter = new Source(background, cap, show, times);
-    // Creation of the collector
-    Sink * collector = new Sink(percent, times);
+    // Farm initialization and start
+    Emitter * emitter = new Emitter(background, cap, show, times);
+    Collector * collector = new Collector(percent, times);
     vector<std::unique_ptr<ff_node>> farm_workers;
     for(int i=0;i<nw;++i){
         farm_workers.push_back(make_unique<FarmWorker>(background, threshold, show, times));
@@ -107,6 +106,7 @@ int main(int argc, char * argv[]) {
     farm.add_emitter(*emitter);
     farm.add_collector(*collector);
     farm.set_scheduling_ondemand();
+    // If mapping flag is false do not use mapping
     if (mapping == false) {
         OptLevel opt;
         opt.max_mapped_threads = 0;
@@ -116,27 +116,28 @@ int main(int argc, char * argv[]) {
         optimize_static(farm, opt);
     }
     if (farm.run_and_wait_end() < 0) cout << "fastflow error" << endl;
-        
-    // When the pipe has finished get the final result from the collector
-    int different_frames = collector->get_different_frames_number();
 
-    auto complessive_duration = std::chrono::high_resolution_clock::now() - complessive_time_start;
-    auto complessive_usec = std::chrono::duration_cast<std::chrono::microseconds>(complessive_duration).count();
-
-    cout << "Total time passed: " << complessive_usec << endl;
-
-    // Print the stats if the program is compiled with -DTRACE_FASTFLOW and the flag -info is specified
+    // Prints the stats if the program is compiled with -DTRACE_FASTFLOW and the flag -info is specified
     if (times) {
         farm.ffStats(cout);
     }
+        
+    // When the farm has finished get the final result from the collector
+    int different_frames = collector->get_different_frames_number();
 
+    // Clear memory
+    farm_workers.clear();
     delete collector;
     delete emitter;
 
-    // Write the output in a file
+    auto complessive_duration = std::chrono::high_resolution_clock::now() - complessive_time_start;
+    auto complessive_usec = std::chrono::duration_cast<std::chrono::microseconds>(complessive_duration).count();
+    cout << "Total time spent: " << complessive_usec << endl;
+
+    // Writes the output in a file
     FileWriter fw(output_file);
     string time = to_string(complessive_usec);
-    fw.print_results(filename, program_name, k, nw, show, time, different_frames);
+    fw.print_results(filename, program_name, k, nw, mapping, time, different_frames);
 
     return 0;
 };

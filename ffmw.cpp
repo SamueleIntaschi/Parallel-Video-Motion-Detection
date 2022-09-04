@@ -33,8 +33,8 @@ int main(int argc, char * argv[]) {
         print_usage(argv[0]);
         return 0;
     }
-    // total number of workers used
-    int nw = 1;
+    // 8 workers if the user does not specify a value    
+    int nw = 8;
     // flag to show result frames for each phase
     bool show = false;
     // flag to show the time for each phase
@@ -72,7 +72,7 @@ int main(int argc, char * argv[]) {
 
     VideoCapture cap(filename);
 
-    // Take first frame as background
+    // Takes first frame as background
     Mat background; 
     cap >> background;
     if (background.empty()) return 0;
@@ -92,6 +92,7 @@ int main(int argc, char * argv[]) {
     cout << "Background average intensity: " << avg_intensity << endl;
     cout << "Threshold is: " << threshold << endl;
     
+    // Pipe preparation and start
     Emitter * emitter = new Emitter(background, cap, show, times);
     Master * master = new Master(percent, times);
     vector<std::unique_ptr<ff_node>> farm_workers;
@@ -104,6 +105,7 @@ int main(int argc, char * argv[]) {
     farm.set_scheduling_ondemand();
     farm.wrap_around();
     ff_Pipe<Task> pipe(emitter, farm);
+    // If mapping flag is false do not use mapping
     if (mapping == false) {
         OptLevel opt;
         opt.max_mapped_threads = 0;
@@ -114,26 +116,28 @@ int main(int argc, char * argv[]) {
     }
     if (pipe.run_and_wait_end() < 0) cout << "fastflow error" << endl;
 
-    // When the pipe has finished get the final result from the collector
+    // Prints the stats if the program is compiled with -DTRACE_FASTFLOW and the flag -info is specified
+    if (times) {
+        pipe.ffStats(cout);
+    }
+
+    // When the pipe has finished gets the final result from the collector
     int different_frames = master->get_different_frames_number();
+
+    // Clear memory
+    farm_workers.clear();
+    delete master;
+    delete emitter;
 
     auto complessive_duration = std::chrono::high_resolution_clock::now() - complessive_time_start;
     auto complessive_usec = std::chrono::duration_cast<std::chrono::microseconds>(complessive_duration).count();
 
     cout << "Total time passed: " << complessive_usec << endl;
 
-    // Print the stats if the program is compiled with -DTRACE_FASTFLOW and the flag -info is specified
-    if (times) {
-        pipe.ffStats(cout);
-    }
-
-    delete master;
-    delete emitter;
-
-    // Write the output in a file
+    // Writes the output in a file
     FileWriter fw(output_file);
     string time = to_string(complessive_usec);
-    fw.print_results(filename, program_name, k, nw, show, time, different_frames);
+    fw.print_results(filename, program_name, k, nw, mapping, time, different_frames);
 
     return 0;
 };

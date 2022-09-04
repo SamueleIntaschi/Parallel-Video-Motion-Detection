@@ -107,7 +107,7 @@ float different_pixels(Mat frame, Mat back, float threshold, bool show) {
 }
 
 /**
- * @brief Get the avg time of the times stored in a vector
+ * @brief Gets the avg time of the times stored in a vector
  * 
  * @param usecs vector that stores the times
  * @return auto average value
@@ -134,7 +134,7 @@ void print_usage(string prog) {
     << endl;
 }
 
-// Sequential pattern
+// Sequential implementation
 int main(int argc, char * argv[]) {
 
     auto complessive_time_start = std::chrono::high_resolution_clock::now();
@@ -186,30 +186,41 @@ int main(int argc, char * argv[]) {
     // Read the frames from the video and perform the actions
     while(true) {
 
+        // Task generation
+        auto start = std::chrono::high_resolution_clock::now();
         Mat frame; 
         cap >> frame;
         if (frame.empty()) break;
         frame.convertTo(frame, CV_32F, 1.0/255.0);
+        if (times) {
+            auto duration = std::chrono::high_resolution_clock::now() - start;
+            auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+            cout << "Times spent to generate a task: " << usec << " usec" << endl;
+        }
 
         // Greyscale conversion
-        auto start = std::chrono::high_resolution_clock::now();
+        start = std::chrono::high_resolution_clock::now();
         frame = greyscale_conversion(frame, show);
-        auto duration = std::chrono::high_resolution_clock::now() - start;
-        auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
-        gr_usecs.push_back(chrono::microseconds(usec));
-        if (times) cout << "Times spent on greyscale conversion: " << usec << " usec" << endl;
+        if (times) {
+            auto duration = std::chrono::high_resolution_clock::now() - start;
+            auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+            gr_usecs.push_back(chrono::microseconds(usec));
+            cout << "Times spent on greyscale conversion: " << usec << " usec" << endl;
+        }
         
         // Smoothing
         start = std::chrono::high_resolution_clock::now();
         frame = smoothing(frame, show);
-        duration = std::chrono::high_resolution_clock::now() - start;
-        usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
-        sm_usecs.push_back(chrono::microseconds(usec));
-        if (times) cout << "Times spent on smoothing: " << usec << " usec" << endl;
+        if (times) {
+            auto duration = std::chrono::high_resolution_clock::now() - start;
+            auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+            sm_usecs.push_back(chrono::microseconds(usec));
+            cout << "Times spent on smoothing: " << usec << " usec" << endl;
+        }
 
         if (frame_number == 0) { // Case first frame taken as background
             background = frame;
-            // Get the average pixel intensity of the background to create a threshold
+            // Gets the average pixel intensity of the background to create a threshold
             float sum = 0;
             float * gp = (float *) frame.data;
             for(int i=0; i<frame.rows; i++) {
@@ -227,11 +238,13 @@ int main(int argc, char * argv[]) {
             start = std::chrono::high_resolution_clock::now();
             float different_pixels_fraction = different_pixels(frame, background, threshold, show);
             if (different_pixels_fraction > percent) different_frames++;
-            duration = std::chrono::high_resolution_clock::now() - start;
-            usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
-            cmp_usecs.push_back(chrono::microseconds(usec));
-            if (times) cout << "Times passed for background subtraction: " << usec << " usec" << endl;
-            if (times) cout << "Frames with movement detected until now: " << different_frames << " over " << frame_number << " analyzed" << endl;
+            if (times) {
+                auto duration = std::chrono::high_resolution_clock::now() - start;
+                auto usec = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+                cmp_usecs.push_back(chrono::microseconds(usec));
+                cout << "Times passed for background subtraction: " << usec << " usec" << endl;
+                cout << "Frames with movement detected until now: " << different_frames << " over " << frame_number << " analyzed" << endl;
+            }
         }
         // Increment the number of total frames
         frame_number++;
@@ -243,9 +256,11 @@ int main(int argc, char * argv[]) {
     auto complessive_usec = std::chrono::duration_cast<std::chrono::microseconds>(complessive_duration).count();
 
     cout << "Number of frames with movement detected: " << different_frames << endl;
-    cout << "Average time spent for greyscale conversion: " << get_avg_time(gr_usecs).count() << endl;
-    cout << "Average time spent for smoothing: " << get_avg_time(sm_usecs).count() << endl;
-    cout << "Average time spent for background subtraction: " << get_avg_time(cmp_usecs).count() << endl;
+    if (times) {
+        cout << "Average time spent for greyscale conversion: " << get_avg_time(gr_usecs).count() << endl;
+        cout << "Average time spent for smoothing: " << get_avg_time(sm_usecs).count() << endl;
+        cout << "Average time spent for background subtraction: " << get_avg_time(cmp_usecs).count() << endl;
+    }
     cout << "Total time passed: " << complessive_usec << endl;
     
     // Write the results in a file

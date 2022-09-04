@@ -11,6 +11,11 @@ struct Task {
     float n;
 };
 
+/**
+ * @brief Class that represents a worker node, it receives task from the master, compute them and
+ *        sends back the results
+ * 
+ */
 class Worker: public ff_node_t<Task> {
 
     private:
@@ -19,6 +24,11 @@ class Worker: public ff_node_t<Task> {
         Mat background; // background matrix
         float threshold; // threshold to consider two pixels different
 
+        /**
+         * @brief Converts a frames in black and white
+         * 
+         * @return a pointer to the matrix that represents the frame in greyscale
+         */
         Mat * convert_to_greyscale(Mat * m) {
             auto start = std::chrono::high_resolution_clock::now();
             Mat * gr = new Mat(m->rows, m->cols, CV_32F);
@@ -49,6 +59,12 @@ class Worker: public ff_node_t<Task> {
             return gr;
         }
 
+        /**
+         * @brief Performs smoothing of a matrix given a filter.
+         * 
+         * @param m the matrix on which applying the filter
+         * @return a pointer to the matrix with smoothing filter applied
+         */
         Mat * smoothing(Mat * m) {
             auto start = std::chrono::high_resolution_clock::now();
             Mat * res = new Mat(m->rows, m->cols, CV_32F, 0.0);
@@ -126,21 +142,23 @@ class Worker: public ff_node_t<Task> {
          * @brief Main function of the node, it performs smoothing on the given matrix and submits the result 
          *        to the next node
          * 
-         * @param m matrix on which perform smoothing
-         * @return matrix on which the filter is applied
+         * @param t task to execute
+         * @return next task to be computed
          */
         Task * svc(Task * t) {
-            if (t -> n == 2) {
-                // Do grayscale conversion
+            // Selects what to do depending on the code received
+            if (t -> n == 2) { // Case grayscale conversion
                 t->m = this->convert_to_greyscale(t->m);
+                // Updates task code
                 t->n = 3;
             }
-            else if (t -> n == 3) {
-                // Do smoothing
+            else if (t -> n == 3) { // Case smoothing
                 t->m = this->smoothing(t->m);
+                // Updates task code
                 t->n = 4;
             }
-            else if (t -> n == 4) {
+            else if (t -> n == 4) { // Case background subtraction
+                // Uses task code to communicate the result
                 t->n = this->different_pixels(t->m);
             }
             return t;

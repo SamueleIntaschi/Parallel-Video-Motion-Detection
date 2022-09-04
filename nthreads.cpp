@@ -39,7 +39,8 @@ int main(int argc, char * argv[]) {
         print_usage(argv[0]);
         return 0;
     }
-    int nw = 1;
+    // 8 workers if the user does not specify a value
+    int nw = 8;
     // flag to show result frames for each phase
     bool show = false;
     // flag to show the time for each phase
@@ -85,12 +86,10 @@ int main(int argc, char * argv[]) {
     if (background.empty()) return 0;
     background.convertTo(background, CV_32F, 1.0/255.0);
     // Greyscale conversion and smoothing
-    GreyscaleConverter * converter = new GreyscaleConverter(show, times);
     GreyscaleConverterSeq converterseq(show, times);
     background = converterseq.convert_to_greyscale(background);
-    // Compute the average intensity to establish a threshold for background subtraction
-    float avg_intensity = converter->get_avg_intensity(background);
-    Smoother * smoother = new Smoother(show, times);
+    // Computes the average intensity to establish a threshold for background subtraction
+    float avg_intensity = converterseq.get_avg_intensity(background);
     SmootherSeq s(background, show, times);
     background = s.smoothing();
     // Threshold to exceed to consider two pixels different
@@ -100,42 +99,43 @@ int main(int argc, char * argv[]) {
     cout << "Background average intensity: " << avg_intensity << endl;
     cout << "Threshold is: " << threshold << endl;
 
-    // Creation of the comparer
+    // Creation of the classes to analyze frames
+    GreyscaleConverter * converter = new GreyscaleConverter(show, times);
+    Smoother * smoother = new Smoother(show, times);
     Comparer * comparer = new Comparer(background, threshold, show, times);
-    // Create and start the thread_pool
+    // Creates and starts the thread_pool
     ThreadPool pool(smoother, converter, comparer, nw, background, threshold, percent, show, times, mapping);
     pool.start_pool();
 
     // Loop that reads frames of video
     while (true) {
-        // Get the frame
+        // Task generation
         Mat * frame = new Mat(background.rows, background.cols, CV_32FC3);
         cap >> *frame;
         if (frame->empty()) break;
         frame->convertTo(*frame, CV_32F, 1.0/255.0);
-        // Increment the number of total frames
+        // Increments the number of total frames
         frame_number++;   
-        // Submit the frame to be converted to greyscale
+        // Submits the frame to be converted to greyscale
         pool.submit_conversion_task(frame, frame_number);
     }
 
     cap.release();
-    // Communicate the frames number to the thread pool
+    // Communicates the total frames number to the thread pool
     pool.communicate_frames_number(frame_number);
 
-    // Wait that all the threads of the pool exited and get the number of frames with movement detected
+    // Waits that all the threads of the pool exited and gets the number of frames with movement detected
     int different_frames = pool.get_final_result();
 
     cout << "Number of frames with movement detected: " << different_frames << " on a total of " << frame_number << " frames" << endl;
-    auto complessive_time_end = std::chrono::high_resolution_clock::now();
     auto complessive_duration = std::chrono::high_resolution_clock::now() - complessive_time_start;
     auto complessive_usec = std::chrono::duration_cast<std::chrono::microseconds>(complessive_duration).count();
     cout << "Total time spent: " << complessive_usec << endl;
     
-    // Write the results on a file
+    // Writes the results on a file
     FileWriter fw(output_file);
     string time = to_string(complessive_usec);
-    fw.print_results(filename, program_name, k, nw, show, time, different_frames);
+    fw.print_results(filename, program_name, k, nw, mapping, time, different_frames);
     
     return 0;
 };

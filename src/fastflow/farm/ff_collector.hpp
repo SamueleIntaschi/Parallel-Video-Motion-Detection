@@ -7,12 +7,12 @@ using namespace std;
 using namespace cv;
 
 /**
- * @brief Class representing the collector of the pipe, it receives the percentage of pixels that differ more than the
+ * @brief Class representing the collector of the farm, it receives the percentage of pixels that differ more than the
  *        threshold from the background pixels and compares them with the parameter specified by the user to decide if there
  *        is a movement in the frame
  * 
  */
-class Sink: public ff_minode_t<float> {
+class Collector: public ff_minode_t<float> {
     private:
         int frames_with_movement = 0;
         int frame_number = 0;
@@ -23,7 +23,7 @@ class Sink: public ff_minode_t<float> {
 
     public:
 
-        Sink(float percent, bool times): percent(percent), times(times) {}
+        Collector(float percent, bool times): percent(percent), times(times) {}
 
         /**
          * @brief Main function of the node
@@ -34,7 +34,7 @@ class Sink: public ff_minode_t<float> {
         float * svc(float * diff) {
             float &d = *diff;
             if (d > this->percent) (this->frames_with_movement)++;
-            // Delete the number when it has been analyzed
+            // Deletes the number when it has been analyzed
             delete diff;
             (this -> frame_number)++;
             if (times) cout << "Frames with movement detected until now: " << frames_with_movement << " over " << frame_number << " analyzed" << endl;
@@ -51,7 +51,7 @@ class Sink: public ff_minode_t<float> {
         }
 
         /**
-         * @brief Get the number of frames with movement detected from outside the node if the stream is finished
+         * @brief Gets the number of frames with movement detected from outside the node if the stream is finished
          * 
          * @return the number of frames with movement detected
          */

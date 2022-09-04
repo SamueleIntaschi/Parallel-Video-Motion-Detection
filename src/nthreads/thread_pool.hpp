@@ -66,7 +66,7 @@ class ThreadPool {
         condition_variable cond;
         vector<thread> tids;
         
-        // Stages of the stream
+        // Classes to operate with frames
         Smoother * smoother;
         GreyscaleConverter * converter;
         Comparer * comparer;
@@ -94,11 +94,13 @@ class ThreadPool {
             while (!submitted) {
                 {
                     unique_lock<mutex> lock(this -> l);
+                    // Queues the task if there are less or equal than 10 tasks
                     if (queue.size() <= 10) {
                         queue.push(t);
                         submitted = true;
                     }
                 }
+                // Notifies other workers if there is a submission
                 if (!submitted) this_thread::sleep_for(std::chrono::microseconds(1000));
                 else cond.notify_one();
             }
@@ -118,22 +120,22 @@ class ThreadPool {
         } 
 
         /**
-         * @brief Creates a task to convert a frame in black and white and putss it in the queue
+         * @brief Creates a task to convert a frame in black and white and puts it in the queue
          * 
          * @param m the frame to convert to grayscale
          */
         void submit_conversion_task(Mat * m, int n) {
-            // Create the task
+            // Creates the task
             auto f = [this, n] (Mat * m) {
                 m = converter -> convert_to_greyscale(m);
                 submit_smoothing_task(m, n);
                 return (float)2;
             };
-            // Insert the task in the queue
             auto fb = bind(f, m);
             Task t;
             t.frame_number = n;
             t.f = fb;
+            // Inserts the task in the queue
             submit_initial_task(t);
         }
 
@@ -143,16 +145,17 @@ class ThreadPool {
          * @param m the matrix to smooth
          */
         void submit_smoothing_task(Mat * m, int n) {
+            // Creates the task
             auto f = [this, n] (Mat * m) {
                 m = (this->smoother)->smoothing(m);
                 submit_result_task(m, n);
                 return (float)3;
             };
-            // Insert the task in the queue
             auto fb = (bind(f, m));
             Task t;
             t.frame_number = n;
             t.f = fb;
+            // Inserts the task in the queue
             submit_task(t);
         }
 
@@ -162,54 +165,52 @@ class ThreadPool {
          * @param m the frame to compare to background
          */
         void submit_result_task(Mat * m, int n) {
-            // Create the task
+            // Creates the task
             auto f = [this, n] (Mat * m) {
                 return this->comparer->different_pixels(m);
             };
-            // Insert the task in the queue
             auto fb = (bind(f, m));
             Task t;
             t.frame_number = n;
             t.f = fb;
+            // Inserts the task in the queue
             submit_task(t);
         }
 
         
-
         /**
-         * @brief Create the threads of the pool and starts them
+         * @brief Creates the threads of the pool and starts them
          * 
          */
         void start_pool() {
-
-            auto body_global = [&] {
+            // Body of a worker
+            auto body = [&] {
                 float res = 0;
                 function<float()> f = []() {return -1;};
                 Task t;
                 // Loop until background subtraction is done for all the frames of the video
                 while (this->res_number <= this->frame_number || this->frame_number < 0) {
                     {
+                        // Gets a task from the queue
                         unique_lock<mutex> lock(this -> l);
                         cond.wait(lock, [&](){return(!queue.empty() || (this->stop) || 
                             (this->res_number == this->frame_number && this->frame_number >= 0));});
                         if (!queue.empty()) {
-                            t = queue.top();//front();
-                            queue.pop();//pop_front();
+                            t = queue.top();
+                            queue.pop();
                         }
-                        else if (this ->stop) {
-                            break;
-                        }
-                        else if (this->res_number == this->frame_number && this->frame_number >= 0) {
+                        else if (this -> stop || (this->res_number == this->frame_number && this->frame_number >= 0)) {
                             break;
                         }
                     }
-                    // Execute task
+                    // Executes task
                     res = t.f();
-                    if (res >= 0 && res <= 1) { // Case background subtraction
+                    if (res >= 0 && res <= 1) { // Case background subtraction, store the result
                         if (res > this->percent) this->different_frames++;
                         this -> res_number++;
                         if (times) cout << "Frames with movement detected until now: " << this->different_frames << " over " << res_number << " analyzed" << endl;
                     } // If it is the grayscale conversion or smoothing case, it is not needed to do anything here
+                    // Break when it knows the total number of frames and they are finished
                     if (this->res_number == this->frame_number && this->frame_number >= 0) break;
                 }
                 // Stop the pool when all the frame have been analysed
@@ -221,9 +222,11 @@ class ThreadPool {
                     }
                 }
             };
+
+            // Threads starting
             int numCPU = sysconf(_SC_NPROCESSORS_ONLN);
             for (int i=0; i<(this->nw); i++) {
-                (this -> tids).push_back(thread(body_global));
+                (this -> tids).push_back(thread(body));
                 if (mapping) {
                     cpu_set_t cpuset;
                     CPU_ZERO(&cpuset);
@@ -235,7 +238,7 @@ class ThreadPool {
         }
 
         /**
-         * @brief Communicate the number of frames from the reader when it has finished
+         * @brief Receives the number of frames from the reader when it has finished
          * 
          * @param n the number of frames taken by the video
          */
@@ -245,7 +248,7 @@ class ThreadPool {
         }
 
         /**
-         * @brief Get the final result from outside the pool
+         * @brief Gets the final result from outside the pool
          * 
          * @return the number of frames with movement detected
          */

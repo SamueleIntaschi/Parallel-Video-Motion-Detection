@@ -26,10 +26,10 @@ class GreyscaleConverter {
         GreyscaleConverter(bool show, bool times): show(show), times(times) {}
 
         /**
-         * @brief Get the avg intensity of pixel the black and white matrix
+         * @brief Gets the avg intensity of pixel the black and white matrix
          * 
          * @param bn the matrix of which we want to compute the pixel avg intensity
-         * @return float 
+         * @return float that represents the average intensity of all pixels in the frame
          */
         float get_avg_intensity(Mat bn) {
             int channels = bn.channels();
@@ -50,7 +50,7 @@ class GreyscaleConverter {
         /**
          * @brief Converts a frames in black and white
          * 
-         * @return the matrix that represents the frame in greyscale
+         * @return a pointer to the matrix that represents the frame in greyscale
          */
         Mat * convert_to_greyscale(Mat * frame) {
             auto start = std::chrono::high_resolution_clock::now();

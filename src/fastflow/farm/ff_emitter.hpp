@@ -11,25 +11,26 @@ using namespace ff;
  *        performs grayscale conversion and smoothing
  * 
  */
-class Source: public ff_monode_t<Mat> {
+class Emitter: public ff_monode_t<Mat> {
 
     private:
         bool show = false;
         bool times = false;
-        // Background matrix to know the frames size
+        // Background matrix needed to know the frames size
         Mat background;
         VideoCapture cap;
 
     public:
-        Source(Mat background, VideoCapture cap, bool show, bool times): cap(cap), background(background), show(show), times(times) {}
+        Emitter(Mat background, VideoCapture cap, bool show, bool times): cap(cap), background(background), show(show), times(times) {}
 
         /**
-         * @brief Main function of the emitter node, it reads frames, converts to grayscale and submits to next node
+         * @brief Main function of the emitter node, it reads frames and submits them to next node
          * 
          * @return EOS when the frames are finished
          */
         Mat * svc (Mat *) {
             while (true) {
+                // Reads frames and sends it to a worker
                 Mat * frame = new Mat(background.rows, background.cols, CV_32FC3);
                 this -> cap >> *frame;
                 if (frame->empty()) break;

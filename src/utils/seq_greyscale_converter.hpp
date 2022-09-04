@@ -29,7 +29,7 @@ class GreyscaleConverterSeq {
          * @brief Get the avg intensity of pixel the black and white matrix
          * 
          * @param bn the matrix of which we want to compute the pixel avg intensity
-         * @return float 
+         * @return float that represents the average intensity of all pixels in the frame
          */
         float get_avg_intensity(Mat bn) {
             int channels = bn.channels();

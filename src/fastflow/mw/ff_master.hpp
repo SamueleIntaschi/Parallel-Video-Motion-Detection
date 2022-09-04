@@ -7,7 +7,10 @@ using namespace ff;
 using namespace std;
 using namespace cv;
 
-
+/**
+ * @brief Class that represents master node, it receives tasks and forwards them to worker nodes
+ * 
+ */
 class Master: public ff_monode_t<Task> {
 
     private:
@@ -23,18 +26,18 @@ class Master: public ff_monode_t<Task> {
         Master(float percent, bool times): percent(percent), times(times) {}
 
         Task * svc(Task * t) {
-            if (t -> n >= 0 && t -> n <= 1) {
-                // Result of background subtraction
+            if (t -> n >= 0 && t -> n <= 1) {// Case result of background subtraction
                 this->frame_number++;
                 if (t->n >= this->percent) this->frames_with_movement++;
                 delete t;
                 if (times) cout << "Frames with movement detected until now: " << frames_with_movement << " over " << frame_number << " analyzed" << endl;
+                // If EOS is received and the frames are finished broadcasts EOS to the workers
                 if (this->eos_received && this->total_frames != -1 && this->total_frames == this->frame_number) {
                     broadcast_task(EOS);
                 }
                 return GO_ON;
             }
-            else if (t->n > 4) {
+            else if (t->n > 4) { // Case total frames number received by the emitter
                 this->total_frames = t->n;
                 if (eos_received && this->total_frames == this->frame_number) {
                     broadcast_task(EOS);
@@ -42,6 +45,7 @@ class Master: public ff_monode_t<Task> {
                 delete t;
                 return GO_ON;
             }
+            // Case general task received, sends it to the workers
             return t;
         }
 
@@ -53,6 +57,7 @@ class Master: public ff_monode_t<Task> {
         void eosnotify(ssize_t id) {
             if (!eos_received) {
                 eos_received = true;
+                // If the frames are finished broadcasts EOS to the workers
                 if (this->total_frames != -1 && this->total_frames == this->frame_number) {
                     broadcast_task(EOS);
                 }
@@ -60,7 +65,7 @@ class Master: public ff_monode_t<Task> {
         }
 
         /**
-         * @brief function executed when the node has finished its work, it prints a message and update a flag
+         * @brief function executed when the node has finished its work, it prints a message and updates a flag
          * 
          *
          */
@@ -70,7 +75,7 @@ class Master: public ff_monode_t<Task> {
         }
 
         /**
-         * @brief Get the number of frames with movement detected from outside the node if the stream is finished
+         * @brief Gets the number of frames with movement detected from outside the node if the stream is finished
          * 
          * @return the number of frames with movement detected
          */

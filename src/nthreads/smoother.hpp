@@ -24,7 +24,7 @@ class Smoother {
          * @brief Performs smoothing of a matrix given a filter.
          * 
          * @param m the matrix on which applying the filter
-         * @return The matrix with smoothing filter applied
+         * @return a pointer to the matrix with smoothing filter applied
          */
         Mat * smoothing(Mat * m) {
             auto start = std::chrono::high_resolution_clock::now();

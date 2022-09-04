@@ -2,7 +2,7 @@ CXX = g++
 CXXFLAGS = -std=c++17 
 LDFLAGS = -pthread -O3 -ftree-vectorize `pkg-config --cflags opencv4` `pkg-config --libs opencv4`
 
-EXE = fffarm ffmw seq nt res
+EXE = fffarm ffmw seq seqnovect nt res
 
 fffarm: fffarm.cpp
 	$(CXX) -DFF_BOUNDED_BUFFER -DDEFAULT_BUFFER_CAPACITY=10 -o fffarm fffarm.cpp $(LDFLAGS)
@@ -18,6 +18,9 @@ ffmwtrace: ffmw.cpp
 
 nt: nthreads.cpp
 	$(CXX) -o nt nthreads.cpp $(LDFLAGS)
+
+seqnovect: sequential.cpp
+	$(CXX) -o seqnovect sequential.cpp -pthread `pkg-config --cflags opencv4` `pkg-config --libs opencv4`
 
 seq: sequential.cpp
 	$(CXX) -o seq sequential.cpp $(LDFLAGS)

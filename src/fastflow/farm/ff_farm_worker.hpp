@@ -17,6 +17,11 @@ class FarmWorker: public ff_node_t<Mat, float> {
         Mat background; // background matrix
         float threshold; // threshold to consider two pixels different
 
+        /**
+         * @brief Converts a frames in black and white
+         * 
+         * @return a pointer to the matrix that represents the frame in greyscale
+         */
         Mat * convert_to_greyscale(Mat * m) {
             auto start = std::chrono::high_resolution_clock::now();
             Mat * gr = new Mat(m->rows, m->cols, CV_32F);
@@ -47,6 +52,12 @@ class FarmWorker: public ff_node_t<Mat, float> {
             return gr;
         }
 
+        /**
+         * @brief Performs smoothing of a matrix applying an average 3x3 kernel.
+         * 
+         * @param m the matrix on which applying the filter
+         * @return a pointer to the matrix with smoothing filter applied
+         */
         Mat * smoothing(Mat * m) {
             auto start = std::chrono::high_resolution_clock::now();
             Mat * res = new Mat(m->rows, m->cols, CV_32F, 0.0);
@@ -89,7 +100,7 @@ class FarmWorker: public ff_node_t<Mat, float> {
          * @brief Counts the number of frames between the frame and the background out of the total 
          * 
          * @param frame the frame to compare with background
-         * @return float percentage of different pixels out of the total
+         * @return a pointer to a float representing percentage of different pixels out of the total
          */
         float * different_pixels(Mat * frame) {
             auto start = std::chrono::high_resolution_clock::now();
@@ -121,11 +132,11 @@ class FarmWorker: public ff_node_t<Mat, float> {
         FarmWorker(Mat background, float threshold, bool show, bool times): background(background), threshold(threshold), show(show), times(times) {}
 
         /**
-         * @brief Main function of the node, it performs smoothing on the given matrix and submits the result 
+         * @brief Main function of the node, it performs actions on the given matrix and submits the collector
          *        to the next node
          * 
-         * @param m matrix on which perform smoothing
-         * @return matrix on which the filter is applied
+         * @param m matrix on which perform actions
+         * @return final result from the given matrix
          */
         float * svc(Mat * m) {
             m = this->convert_to_greyscale(m);
